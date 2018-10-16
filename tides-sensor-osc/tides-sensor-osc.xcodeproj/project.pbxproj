@@ -1,0 +1,300 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		22EB4E2A21759DB600B033A6 /* tides_sensor_osc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2321759DB500B033A6 /* tides_sensor_osc.cpp */; };
+		22EB4E2B21759DB600B033A6 /* sensor_server.h in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2421759DB500B033A6 /* sensor_server.h */; };
+		22EB4E2C21759DB600B033A6 /* tides_data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2521759DB500B033A6 /* tides_data.cpp */; };
+		22EB4E2D21759DB600B033A6 /* tides_data.h in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2621759DB500B033A6 /* tides_data.h */; };
+		22EB4E2E21759DB600B033A6 /* fast-cpp-csv-parser in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2721759DB600B033A6 /* fast-cpp-csv-parser */; };
+		22EB4E2F21759DB600B033A6 /* spdlog in Sources */ = {isa = PBXBuildFile; fileRef = 22EB4E2821759DB600B033A6 /* spdlog */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		22EB4E1221759C5400B033A6 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		22EB4E1421759C5400B033A6 /* tides-sensor-osc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "tides-sensor-osc"; sourceTree = BUILT_PRODUCTS_DIR; };
+		22EB4E2321759DB500B033A6 /* tides_sensor_osc.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tides_sensor_osc.cpp; path = ../src/tides_sensor_osc.cpp; sourceTree = "<group>"; };
+		22EB4E2421759DB500B033A6 /* sensor_server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = sensor_server.h; path = ../src/sensor_server.h; sourceTree = "<group>"; };
+		22EB4E2521759DB500B033A6 /* tides_data.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tides_data.cpp; path = ../src/tides_data.cpp; sourceTree = "<group>"; };
+		22EB4E2621759DB500B033A6 /* tides_data.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = tides_data.h; path = ../src/tides_data.h; sourceTree = "<group>"; };
+		22EB4E2721759DB600B033A6 /* fast-cpp-csv-parser */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "fast-cpp-csv-parser"; path = "../src/fast-cpp-csv-parser"; sourceTree = "<group>"; };
+		22EB4E2821759DB600B033A6 /* spdlog */ = {isa = PBXFileReference; lastKnownFileType = folder; name = spdlog; path = ../src/spdlog; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		22EB4E1121759C5400B033A6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		22EB4E0B21759C5400B033A6 = {
+			isa = PBXGroup;
+			children = (
+				22EB4E2721759DB600B033A6 /* fast-cpp-csv-parser */,
+				22EB4E2421759DB500B033A6 /* sensor_server.h */,
+				22EB4E2821759DB600B033A6 /* spdlog */,
+				22EB4E2521759DB500B033A6 /* tides_data.cpp */,
+				22EB4E2621759DB500B033A6 /* tides_data.h */,
+				22EB4E2321759DB500B033A6 /* tides_sensor_osc.cpp */,
+				22EB4E1521759C5400B033A6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		22EB4E1521759C5400B033A6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				22EB4E1421759C5400B033A6 /* tides-sensor-osc */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		22EB4E1321759C5400B033A6 /* tides-sensor-osc */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 22EB4E1B21759C5400B033A6 /* Build configuration list for PBXNativeTarget "tides-sensor-osc" */;
+			buildPhases = (
+				22EB4E1021759C5400B033A6 /* Sources */,
+				22EB4E1121759C5400B033A6 /* Frameworks */,
+				22EB4E1221759C5400B033A6 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "tides-sensor-osc";
+			productName = "tides-sensor-osc";
+			productReference = 22EB4E1421759C5400B033A6 /* tides-sensor-osc */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		22EB4E0C21759C5400B033A6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0920;
+				ORGANIZATIONNAME = "Mauricio Bustos";
+				TargetAttributes = {
+					22EB4E1321759C5400B033A6 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 22EB4E0F21759C5400B033A6 /* Build configuration list for PBXProject "tides-sensor-osc" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 22EB4E0B21759C5400B033A6;
+			productRefGroup = 22EB4E1521759C5400B033A6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				22EB4E1321759C5400B033A6 /* tides-sensor-osc */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		22EB4E1021759C5400B033A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22EB4E2A21759DB600B033A6 /* tides_sensor_osc.cpp in Sources */,
+				22EB4E2B21759DB600B033A6 /* sensor_server.h in Sources */,
+				22EB4E2C21759DB600B033A6 /* tides_data.cpp in Sources */,
+				22EB4E2D21759DB600B033A6 /* tides_data.h in Sources */,
+				22EB4E2E21759DB600B033A6 /* fast-cpp-csv-parser in Sources */,
+				22EB4E2F21759DB600B033A6 /* spdlog in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		22EB4E1921759C5400B033A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Documents/development/git/tides-sensor-osc/src",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		22EB4E1A21759C5400B033A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Documents/development/git/tides-sensor-osc/src",
+					/usr/local/include,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		22EB4E1C21759C5400B033A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-llo",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		22EB4E1D21759C5400B033A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-llo",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		22EB4E0F21759C5400B033A6 /* Build configuration list for PBXProject "tides-sensor-osc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22EB4E1921759C5400B033A6 /* Debug */,
+				22EB4E1A21759C5400B033A6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		22EB4E1B21759C5400B033A6 /* Build configuration list for PBXNativeTarget "tides-sensor-osc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22EB4E1C21759C5400B033A6 /* Debug */,
+				22EB4E1D21759C5400B033A6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 22EB4E0C21759C5400B033A6 /* Project object */;
+}
