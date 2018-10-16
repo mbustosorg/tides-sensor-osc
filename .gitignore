@@ -1,3 +1,5 @@
+xcode/*
+
 .DS_Store
 *~
 # Prerequisites
@@ -33,3 +35,4 @@
 *.out
 *.app
 bin/
+
