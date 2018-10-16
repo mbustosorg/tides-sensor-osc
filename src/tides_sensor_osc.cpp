@@ -20,7 +20,6 @@
 #include <chrono>
 #include <arpa/inet.h>
 #include "lo/lo.h"
-#include "spdlog/spdlog.h"
 #include "tides_data.h"
 
 static int frameCount = 0;
@@ -77,7 +76,7 @@ void setupServer() {
 
 int main(int argc, char *argv[])
 {
-    TidesData tidesData(
+    TidesData tidesData("./tides_data/tidelevels_9414863.csv");
     
     fd_set readfds;
     int valread, sd, max_sd, new_socket;
