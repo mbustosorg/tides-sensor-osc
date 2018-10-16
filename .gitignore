@@ -33,5 +33,3 @@
 *.out
 *.app
 bin/
-
-tides-sensor-osc/
