@@ -27,12 +27,18 @@
 using namespace std;
 
 TidesData::TidesData(string filename) {
+    time_t currentTime = time(NULL);
+    bool timeDetected = false;
     console->info("Reading tide data...");
-    io::CSVReader<2> in(filename);
+        io::CSVReader<2> in(filename);
     in.read_header(io::ignore_no_column, "DateTime", "Height");
     std::string dateTime; double height;
     while(in.read_row(dateTime, height)){
-        time_t time = ParseISO8601(dateTime);
+        time_t time = ParseISO8601(dateTime) / 1000.0;
+        if (time > currentTime && !timeDetected) {
+            console->info("Current tide height = {} ft @ {}", height, dateTime.c_str());
+            timeDetected = true;
+        }
         timeseries.insert(timeseries.end(), tuple<time_t, float> (time, height));
     }
     console->info("Read {0:d} records", timeseries.size());

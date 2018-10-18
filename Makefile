@@ -1,6 +1,7 @@
 CC=g++
 CFLAGS=-Isrc -std=c++11
-LIBS=-lm -llo
+LIBFLAGS=
+LIBS=-llo
 SRC_DIR=./src/
 OBJ_DIR=./obj/
 
@@ -12,7 +13,7 @@ $(OBJ_DIR)%.o : $(SRC_DIR)%.cpp
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 bin/tides_sensor_osc: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LIBFLAGS) $(LIBS)
 
 .PHONY: clean
 
