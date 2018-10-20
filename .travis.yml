@@ -1,0 +1,9 @@
+language: cpp
+install:
+- git clone git://liblo.git.sourceforge.net/gitroot/liblo/liblo
+- cd liblo
+- configure
+- make install
+- cd ..
+script:
+- make
