@@ -1,5 +1,7 @@
 # Tides Sensor OSC Server
 
+[![Build Status](https://travis-ci.org/mbustosorg/tides-sensor-osc.svg?branch=master)](https://travis-ci.org/mbustosorg/tides-sensor-osc)
+
 ## Dependencies
 
 The application is dependent on the LIBLO Lightweight OSC library located at http://liblo.sourceforge.net/.  Installation instructions are at http://liblo.sourceforge.net/README.html.
