@@ -1,3 +1,4 @@
+sudo: required
 language: cpp
 install:
 - wget https://sourceforge.net/projects/liblo/files/liblo/0.29/liblo-0.29.tar.gz
@@ -5,7 +6,7 @@ install:
 - tar -xvf liblo-0.29.tar
 - cd liblo-0.29
 - ./configure
-- make install
+- sudo make install
 - cd ..
 script:
 - make
