@@ -1,8 +1,10 @@
 language: cpp
 install:
-- git clone git://liblo.git.sourceforge.net/gitroot/liblo/liblo
-- cd liblo
-- configure
+- wget https://sourceforge.net/projects/liblo/files/liblo/0.29/liblo-0.29.tar.gz
+- gunzip liblo-0.29.tar.gz
+- tar -xvf liblo-0.29.tar
+- cd liblo-0.29
+- ./configure
 - make install
 - cd ..
 script:
