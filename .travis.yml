@@ -9,4 +9,5 @@ install:
 - sudo make install
 - cd ..
 script:
+- mkdir obj
 - make
