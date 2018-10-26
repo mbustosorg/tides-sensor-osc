@@ -24,16 +24,14 @@
 
 static int frameCount = 0;
 #define FRAME_RATE_INTERVAL_OUT (500)
-#define TIMING_OUT (true)
-const long long FramePeriod = 32000; // 60Hz
+#define TIMING_OUT (false)
+const long long FramePeriod = 32000;
 
 #define MAX_CLIENTS 10
 int master_socket, addrlen, client_socket[30];
 auto console = spdlog::stdout_color_mt("console");
 struct sockaddr_in address;
 uint8_t buffer[1025];
-
-using namespace std;
 
 bool timingOutput(int frameCount) {
     return TIMING_OUT && frameCount % FRAME_RATE_INTERVAL_OUT == 0;
@@ -74,6 +72,36 @@ void setupServer() {
     console->info("Waiting for connections ...");
 }
 
+void sendOscCommand(lo_address* target, int source, int level) {
+    int THRESHOLD = 512;
+    int result = 0;
+    switch(source) {
+        case 0:
+            console->info("Run pattern 1");
+            if (level < THRESHOLD) {
+                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
+            } else {
+                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 2);
+            }
+            break;
+        case 1:
+            console->info("Run pattern 1");
+            if (level < THRESHOLD) {
+                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
+            } else {
+                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 3);
+            }
+            break;
+    }
+    if (result == 0) {
+        console->info("Send OSC message {} from {}", level, source);
+    } else if (result == 1) {
+        console->warn("Send no OSC message {} from {}", level, source);
+    } else if (result == -1) {
+        console->error("Unable to send OSC message {} from {}", level, source);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     TidesData tidesData("./tides_data/tidelevels_9414863.csv");
@@ -92,26 +120,8 @@ int main(int argc, char *argv[])
     setupServer();
     
     console->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
-    
     lo_address t = lo_address_new(OSC_HOST, OSC_PORT);
-    
-    console->info("Sending test data");
-    console->info("Run pattern 1");
-    lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-    sleep(5);
-    console->info("Run pattern 2");
-    lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 2);
-    sleep(5);
-    console->info("Run pattern 3");
-    lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-    sleep(5);
-    console->info("Run pattern 4");
-    lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 4);
-    sleep(5);
-    console->info("Run pattern 5");
-    lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 5);
-    sleep(5);
-    
+
     struct timeval tv = {0, FramePeriod};
     
     auto frameRateMonitorStart = chrono::high_resolution_clock::now();
@@ -123,7 +133,7 @@ int main(int argc, char *argv[])
         if (timingOutput(frameCount)) {
             auto frameRateMonitorStop = std::chrono::high_resolution_clock::now();
             long long updateLength = std::chrono::duration_cast<std::chrono::microseconds>(frameRateMonitorStop - frameRateMonitorStart).count();
-            console->info("Average Frame Time (ms): {:03.2f}", updateLength / FRAME_RATE_INTERVAL_OUT);
+            console->info("Average Frame Time (ms): {:03.2f}", float(updateLength / FRAME_RATE_INTERVAL_OUT));
             frameRateMonitorStart = std::chrono::high_resolution_clock::now();
         }
         
@@ -179,7 +189,16 @@ int main(int argc, char *argv[])
                         close(sd);
                         client_socket[i] = 0;
                     } else if (received > 0L) {
-                        // Handle received...
+                        try {
+                            buffer[received] = 0;
+                            int level = std::stoi((char*)buffer);
+                            console->info("Received {} from {}:{}", level, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+                            sendOscCommand(&t, i, level);
+                        }
+                        catch(std::exception const & e)
+                        {
+                            console->error("Received invalid value from client: {}", buffer);
+                        }
                     }
                 }
             }
