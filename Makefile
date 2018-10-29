@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-Isrc -std=c++11
-LIBFLAGS=
+CFLAGS=-Isrc -std=c++11 -pthread
+LIBFLAGS=-pthread
 LIBS=-llo
 SRC_DIR=./src/
 OBJ_DIR=./obj/
@@ -18,4 +18,4 @@ bin/tides_sensor_osc: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f obj/*.o *~ src/*~
+	rm -f obj/*.o *~ src/*~ bin/*

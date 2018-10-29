@@ -28,13 +28,14 @@ using namespace std;
 
 TidesData::TidesData(string filename) {
     time_t currentTime = time(NULL);
+    console->info("Current Time: {}", currentTime);
     bool timeDetected = false;
     console->info("Reading tide data...");
-        io::CSVReader<2> in(filename);
+    io::CSVReader<2> in(filename);
     in.read_header(io::ignore_no_column, "DateTime", "Height");
     std::string dateTime; double height;
     while(in.read_row(dateTime, height)){
-        time_t time = ParseISO8601(dateTime) / 1000.0;
+        time_t time = ParseISO8601(dateTime);
         if (time > currentTime && !timeDetected) {
             console->info("Current tide height = {} ft @ {}", height, dateTime.c_str());
             timeDetected = true;
@@ -52,7 +53,7 @@ time_t TidesData::ParseISO8601(const string& input) {
     if (input.length() >= expectedLength) {
         return 0;
     }
-    std::tm time = { 0 };
+    std::tm time = {0};
     time.tm_year = ParseInt(&input[0]) - 1900;
     time.tm_mon = ParseInt(&input[5]) - 1;
     time.tm_mday = ParseInt(&input[8]);
@@ -60,6 +61,5 @@ time_t TidesData::ParseISO8601(const string& input) {
     time.tm_min = ParseInt(&input[14]);
     time.tm_sec = ParseInt(&input[17]);
     time.tm_isdst = 0;
-    const int millis = input.length() > 20 ? ParseInt(&input[20]) : 0;
-    return timegm(&time) * 1000 + millis;
+    return timegm(&time);
 }
