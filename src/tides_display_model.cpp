@@ -32,44 +32,16 @@ TidesDisplayModel::TidesDisplayModel() {
     t = lo_address_new(OSC_HOST, OSC_PORT);
 }
 
-void TidesDisplayModel::newClient(int clientId) {
-    
-}
-
-void TidesDisplayModel::clientDropped(int clientId) {
-    
-}
-
-void TidesDisplayModel::received(int clientId, int value) {
-    
-    // Keep track of state of sensors to coordinate multiple on at once
+// Keep track of state of sensors to coordinate multiple on at once
+void TidesDisplayModel::received(int clientId, int value) {    
     
     int THRESHOLD = 512;
     int result = 0;
-    switch(clientId) {
-        case 0:
-            console->info("Run pattern 1");
-            if (value < THRESHOLD) {
-                result = lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-            } else {
-                result = lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 2);
-            }
-            break;
-        case 1:
-            console->info("Run pattern 1");
-            if (value < THRESHOLD) {
-                result = lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-            } else {
-                result = lo_send(t, "/LEDPlay/player/backgroundRunIndex/", "i", 3);
-            }
-            
-            //foreground path 1 - 7
-            break;
+    if (value > THRESHOLD) {
+        result = lo_send(t, OSC_PATH, "i", clientId);
     }
-    if (result == 0) {
-        console->info("Send OSC message {} from {}", value, clientId);
-    } else if (result == 1) {
-        console->warn("Send no OSC message {} from {}", value, clientId);
+    if (result == 1) {
+        console->warn("Unable OSC message {} from {}", value, clientId);
     } else if (result == -1) {
         console->error("Unable to send OSC message {} from {}", value, clientId);
     }

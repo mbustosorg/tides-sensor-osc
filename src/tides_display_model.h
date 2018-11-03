@@ -29,17 +29,17 @@ class TidesDisplayModel {
 
 public:
     TidesDisplayModel();
-    void newClient(int clientId);
-    void clientDropped(int clientId);
     void received(int clientId, int value);
+    
+    const char* OSC_PATH = "/LEDPlay/player/foregroundRunIndex";
     
 private:
     
-    std::shared_ptr<spdlog::logger> console = spdlog::stdout_color_mt("console");
+    std::shared_ptr<spdlog::logger> console = spdlog::get("console");
     lo_address t;
     vector<int> clients;
     TidesData tidesData = TidesData("./tides_data/tidelevels_9414863.csv");
     
 };
 
-#endif /* tides_display_model_hpp */
+#endif /* tides_display_model_h */
