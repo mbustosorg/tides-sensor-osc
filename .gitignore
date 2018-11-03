@@ -36,4 +36,5 @@ xcode/*
 *.out
 *.app
 bin/
+transfer.sh
 

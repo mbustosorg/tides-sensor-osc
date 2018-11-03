@@ -19,12 +19,9 @@
 
 #include <chrono>
 #include <arpa/inet.h>
-#include "lo/lo.h"
-#include "tides_data.h"
+#include "tides_display_model.h"
 
-static int frameCount = 0;
 #define FRAME_RATE_INTERVAL_OUT (500)
-#define TIMING_OUT (false)
 const long long FramePeriod = 32000;
 
 #define MAX_CLIENTS 10
@@ -32,10 +29,7 @@ int master_socket, addrlen, client_socket[30];
 auto console = spdlog::stdout_color_mt("console");
 struct sockaddr_in address;
 uint8_t buffer[1025];
-
-bool timingOutput(int frameCount) {
-    return TIMING_OUT && frameCount % FRAME_RATE_INTERVAL_OUT == 0;
-}
+TidesDisplayModel model = TidesDisplayModel();
 
 void setupServer() {
     int opt = 1;
@@ -72,137 +66,74 @@ void setupServer() {
     console->info("Waiting for connections ...");
 }
 
-void sendOscCommand(lo_address* target, int source, int level) {
-    int THRESHOLD = 512;
-    int result = 0;
-    switch(source) {
-        case 0:
-            console->info("Run pattern 1");
-            if (level < THRESHOLD) {
-                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-            } else {
-                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 2);
-            }
-            break;
-        case 1:
-            console->info("Run pattern 1");
-            if (level < THRESHOLD) {
-                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 1);
-            } else {
-                result = lo_send(*target, "/LEDPlay/player/backgroundRunIndex/", "i", 3);
-            }
-            break;
+void monitorNetwork() {
+    fd_set readfds;
+    int sd, max_sd, new_socket;
+    
+    FD_ZERO(&readfds);
+    FD_SET(master_socket, &readfds);
+    max_sd = master_socket;
+    for (int i = 0 ; i < MAX_CLIENTS ; i++) {
+        sd = client_socket[i];
+        if (sd > 0) FD_SET(sd , &readfds);
+        if (sd > max_sd) max_sd = sd;
     }
-    if (result == 0) {
-        console->info("Send OSC message {} from {}", level, source);
-    } else if (result == 1) {
-        console->warn("Send no OSC message {} from {}", level, source);
-    } else if (result == -1) {
-        console->error("Unable to send OSC message {} from {}", level, source);
+
+    struct timeval tv = {0, FramePeriod};
+    tv.tv_sec = 0;
+    tv.tv_usec = FramePeriod - 1500;
+
+    int selectResult = select(max_sd + 1, &readfds, NULL, NULL, &tv);
+    
+    if (selectResult > 0) {
+        if (FD_ISSET(master_socket, &readfds)) {
+            if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
+                console->warn("Could not accept new client");
+                exit(EXIT_FAILURE);
+            }
+            console->info("New connection, socket fd: {}, ip: {}, port, {}", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (client_socket[i] == 0) {
+                    client_socket[i] = new_socket;
+                    model.newClient(i);
+                    console->info("Adding to list of sockets as {}", i);
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            sd = client_socket[i];
+            if (FD_ISSET(sd , &readfds)) {
+                long received = read(sd , buffer, 1024);
+                if (received == 0L) {
+                    getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
+                    console->info("Host {}:{} disconnected", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+                    close(sd);
+                    client_socket[i] = 0;
+                    model.clientDropped(i);
+                } else if (received > 0L) {
+                    try {
+                        buffer[received] = 0;
+                        int level = std::stoi((char*)buffer);
+                        console->info("Received {} from {}:{}", level, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+                        model.received(i, level);
+                    }
+                    catch(std::exception const & e)
+                    {
+                        console->error("Received invalid value from client: {}", buffer);
+                    }
+                }
+            }
+        }
     }
 }
 
 int main(int argc, char *argv[])
 {
-    TidesData tidesData("./tides_data/tidelevels_9414863.csv");
-    
-    fd_set readfds;
-    int valread, sd, max_sd, new_socket;
-    
-    char* OSC_HOST = std::getenv("OSC_HOST");
-    char* OSC_PORT = std::getenv("OSC_PORT");
-    
-    if (OSC_HOST == NULL || OSC_PORT == NULL) {
-        console->error("UNDEFINED ENVIRONMENT OSC_HOST AND OR OSC_PORT");
-        return -1;
-    }
-    
     setupServer();
-    
-    console->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
-    lo_address t = lo_address_new(OSC_HOST, OSC_PORT);
 
-    struct timeval tv = {0, FramePeriod};
-    
-    auto frameRateMonitorStart = chrono::high_resolution_clock::now();
-    
     while (1) {
-        auto frameStart = chrono::high_resolution_clock::now();
-        
-        frameCount++;
-        if (timingOutput(frameCount)) {
-            auto frameRateMonitorStop = std::chrono::high_resolution_clock::now();
-            long long updateLength = std::chrono::duration_cast<std::chrono::microseconds>(frameRateMonitorStop - frameRateMonitorStart).count();
-            console->info("Average Frame Time (ms): {:03.2f}", float(updateLength / FRAME_RATE_INTERVAL_OUT));
-            frameRateMonitorStart = std::chrono::high_resolution_clock::now();
-        }
-        
-        // Do Somthing Here
-        
-        FD_ZERO(&readfds);
-        FD_SET(master_socket, &readfds);
-        max_sd = master_socket;
-        for (int i = 0 ; i < MAX_CLIENTS ; i++) {
-            sd = client_socket[i];
-            if (sd > 0) FD_SET(sd , &readfds);
-            if (sd > max_sd) max_sd = sd;
-        }
-        
-        auto frameStop = chrono::high_resolution_clock::now();
-        long long updateLength = chrono::duration_cast<std::chrono::microseconds>(frameStop - frameStart).count();
-        
-        tv.tv_sec = 0;
-        tv.tv_usec = FramePeriod - 1500 - updateLength;
-        
-        if (timingOutput(frameCount)) {
-            console->info("start: {0:d}", frameStart.time_since_epoch().count());
-        }
-        
-        int selectResult = select(max_sd + 1, &readfds, NULL, NULL, &tv);
-        
-        if (timingOutput(frameCount)) {
-            console->info("stop: {0:d}", frameStop.time_since_epoch().count());
-        }
-        
-        if (selectResult > 0) {
-            if (FD_ISSET(master_socket, &readfds)) {
-                if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-                    console->warn("Could not accept new client");
-                    exit(EXIT_FAILURE);
-                }
-                console->info("New connection, socket fd: {}, ip: {}, port, {}", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-                for (int i = 0; i < MAX_CLIENTS; i++) {
-                    if (client_socket[i] == 0) {
-                        client_socket[i] = new_socket;
-                        console->info("Adding to list of sockets as {}", i);
-                        break;
-                    }
-                }
-            }
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                sd = client_socket[i];
-                if (FD_ISSET(sd , &readfds)) {
-                    long received = read(sd , buffer, 1024);
-                    if (received == 0L) {
-                        getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
-                        console->info("Host {}:{} disconnected", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-                        close(sd);
-                        client_socket[i] = 0;
-                    } else if (received > 0L) {
-                        try {
-                            buffer[received] = 0;
-                            int level = std::stoi((char*)buffer);
-                            console->info("Received {} from {}:{}", level, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-                            sendOscCommand(&t, i, level);
-                        }
-                        catch(std::exception const & e)
-                        {
-                            console->error("Received invalid value from client: {}", buffer);
-                        }
-                    }
-                }
-            }
-        }
+        monitorNetwork();
     }
     console->info("EXITING");
     
