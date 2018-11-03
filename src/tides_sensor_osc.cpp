@@ -31,110 +31,57 @@ struct sockaddr_in address;
 uint8_t buffer[1025];
 TidesDisplayModel model = TidesDisplayModel();
 
-void setupServer() {
-    int opt = 1;
-    
-    const char* envPort = getenv("TIDES_SENSOR_PORT");
-    int port = 0;
-    if (envPort) port = atoi(envPort);
-    else port = 1999;
-    
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        client_socket[i] = 0;
-    }
-    if ((master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0) {
-        console->warn("socket failed");
-        exit(EXIT_FAILURE);
-    }
-    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
-        console->warn("setsockopt");
-        exit(EXIT_FAILURE);
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
-    if (::bind(master_socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        console->warn("bind failed");
-        exit(EXIT_FAILURE);
-    }
-    console->info("Listening for sensor clients on port {0:d}", port);
-    if (listen(master_socket, 3) < 0) {
-        console->warn("could not set listen");
-        exit(EXIT_FAILURE);
-    }
-    addrlen = sizeof(address);
-    console->info("Waiting for connections ...");
+void error(int num, const char *msg, const char *path) {
+    console->error("liblo server error {} in path {}: {}", num, path, msg);
+    fflush(stdout);
 }
 
-void monitorNetwork() {
-    fd_set readfds;
-    int sd, max_sd, new_socket;
+int generic_handler(const char *path, const char *types, lo_arg ** argv, int argc, void *data, void *user_data) {
     
-    FD_ZERO(&readfds);
-    FD_SET(master_socket, &readfds);
-    max_sd = master_socket;
-    for (int i = 0 ; i < MAX_CLIENTS ; i++) {
-        sd = client_socket[i];
-        if (sd > 0) FD_SET(sd , &readfds);
-        if (sd > max_sd) max_sd = sd;
-    }
-
-    struct timeval tv = {0, FramePeriod};
-    tv.tv_sec = 0;
-    tv.tv_usec = FramePeriod - 1500;
-
-    int selectResult = select(max_sd + 1, &readfds, NULL, NULL, &tv);
+    int i;
     
-    if (selectResult > 0) {
-        if (FD_ISSET(master_socket, &readfds)) {
-            if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-                console->warn("Could not accept new client");
-                exit(EXIT_FAILURE);
-            }
-            console->info("New connection, socket fd: {}, ip: {}, port, {}", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (client_socket[i] == 0) {
-                    client_socket[i] = new_socket;
-                    model.newClient(i);
-                    console->info("Adding to list of sockets as {}", i);
-                    break;
-                }
-            }
-        }
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            sd = client_socket[i];
-            if (FD_ISSET(sd , &readfds)) {
-                long received = read(sd , buffer, 1024);
-                if (received == 0L) {
-                    getpeername(sd , (struct sockaddr*)&address , (socklen_t*)&addrlen);
-                    console->info("Host {}:{} disconnected", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-                    close(sd);
-                    client_socket[i] = 0;
-                    model.clientDropped(i);
-                } else if (received > 0L) {
-                    try {
-                        buffer[received] = 0;
-                        int level = std::stoi((char*)buffer);
-                        console->info("Received {} from {}:{}", level, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-                        model.received(i, level);
-                    }
-                    catch(std::exception const & e)
-                    {
-                        console->error("Received invalid value from client: {}", buffer);
-                    }
-                }
-            }
-        }
+    console->info("path: <{}>", path);
+    for (i = 0; i < argc; i++) {
+        console->info("arg {} '{}' ", i, types[i]);
+        lo_arg_pp((lo_type)types[i], argv[i]);
     }
+    fflush(stdout);
+    return 1;
+}
+
+int sensor_handler(const char *path, const char *types, lo_arg ** argv,
+                int argc, void *data, void *user_data)
+{
+    console->info("{} <- f:{}, i:{}", path, argv[0]->f, argv[1]->i);
+    fflush(stdout);
+    return 0;
+}
+
+lo_server_thread setupServer(const char* port) {
+    
+    lo_server_thread st = lo_server_thread_new(port, error);
+    
+    lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
+    lo_server_thread_add_method(st, "/sensor", "ii", sensor_handler, NULL);
+    
+    lo_server_thread_start(st);
+    
+    return st;
 }
 
 int main(int argc, char *argv[])
 {
-    setupServer();
-
+    char* port = getenv("TIDES_SENSOR_PORT");
+    if (!port) port = (char*)"1999";
+    
+    lo_server_thread st = setupServer(port);
+    
     while (1) {
-        monitorNetwork();
+        usleep(100);
     }
+    
+    lo_server_thread_free(st);
+
     console->info("EXITING");
     
     return 0;
