@@ -18,4 +18,6 @@ bin/tides_sensor_osc: $(OBJ)
 .PHONY: clean
 
 clean:
+	mkdir -p obj
+	mkdir -p bin
 	rm -f obj/*.o *~ src/*~ bin/*
