@@ -25,6 +25,8 @@
 #include "tides_data.h"
 #include "lo/lo.h"
 
+const int TOWER_COUNT = 10;
+
 class TidesDisplayModel {
 
 public:
@@ -37,7 +39,7 @@ private:
     
     std::shared_ptr<spdlog::logger> console = spdlog::get("console");
     lo_address t;
-    vector<int> clients;
+    vector<int>* clients = new vector<int>(TOWER_COUNT, 0);
     TidesData tidesData = TidesData("./tides_data/tidelevels_9414863.csv");
     
 };

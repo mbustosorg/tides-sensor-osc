@@ -37,8 +37,24 @@ void TidesDisplayModel::received(int clientId, int value) {
     
     int THRESHOLD = 512;
     int result = 0;
-    if (value > THRESHOLD) {
+    clients->at(clientId) = value;
+    int sum = 0;
+    std::for_each(clients->begin(), clients->end(), [&] (int n) {
+        if (n > THRESHOLD) sum++;
+    });
+    // 1-7 Individual
+    // 8-10 Cross
+    // 11-17 Individual Fire
+    // 18-20 All Fire
+    
+    if (sum == 1) {
         result = lo_send(t, OSC_PATH, "i", clientId);
+    } else if (sum == 2) {
+        result = lo_send(t, OSC_PATH, "i", 8);
+    } else if (sum == 3) {
+        result = lo_send(t, OSC_PATH, "i", 9);
+    } else if (sum == 4) {
+        result = lo_send(t, OSC_PATH, "i", 10);
     }
     if (result == 1) {
         console->warn("Unable OSC message {} from {}", value, clientId);
