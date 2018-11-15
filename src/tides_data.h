@@ -34,7 +34,7 @@ class TidesData {
     
 public:
     
-    TidesData(string filename);
+    TidesData();
     
 private:
     

@@ -26,12 +26,20 @@
 
 using namespace std;
 
-TidesData::TidesData(string filename) {
+TidesData::TidesData() {
+    
+    string* filename = NULL;
+    
+    if(const char* env_p = std::getenv("OSC_TIDES_CSV")) {
+        filename = new string(std::getenv("OSC_TIDES_CSV"));
+    } else {
+        filename = new string("./tides_data/tidelevels_9414863.csv");
+    }
     time_t currentTime = time(NULL);
     console->info("Current Time: {}", currentTime);
     bool timeDetected = false;
     console->info("Reading tide data...");
-    io::CSVReader<2> in(filename);
+    io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "DateTime", "Height");
     std::string dateTime; double height;
     while(in.read_row(dateTime, height)){
