@@ -18,23 +18,38 @@
  */
 
 #include <chrono>
+#include <time.h>
 #include <arpa/inet.h>
 #include "tides_display_model.h"
 
 auto console = spdlog::stdout_color_mt("console");
 
 TidesDisplayModel model = TidesDisplayModel();
+bool timingRestrictions = true;
 
 void error(int num, const char *msg, const char *path) {
-    console->error("liblo server error {} in path {}: {}", num, path, msg);
+    if (path != NULL) console->error("liblo server error {}: {}", num, msg);
+    else console->error("liblo server error {} in path {}: {}", num, path, msg);
     fflush(stdout);
+}
+
+bool systemOn() {
+    // Enable system when between 0 and 10 GMT, 6PM to 8AM PST
+    time_t theTime = time(NULL);
+    struct tm *aTime = localtime(&theTime);
+    if (aTime->tm_hour > 10) return true;
+    else return false;
 }
 
 int sensor_handler(const char *path, const char *types, lo_arg ** argv,
                 int argc, void *data, void *user_data)
 {
     console->info("{} <- id:{}, value:{}", path, argv[0]->i, argv[1]->i);
-    model.received(argv[0]->i, argv[1]->i);
+    if (systemOn() && timingRestrictions) {
+        model.received(argv[0]->i, argv[1]->i);
+    } else {
+        console->info("System is off");
+    }
     return 0;
 }
 
@@ -50,6 +65,9 @@ lo_server_thread setupServer(const char* port) {
 
 int main(int argc, char *argv[])
 {
+    char* timing = getenv("TIDES_SENSOR_TIMING_OFF");
+    if (timing) timingRestrictions = false;
+    
     char* port = getenv("TIDES_SENSOR_PORT");
     
     if (!port) port = (char*)"1999";

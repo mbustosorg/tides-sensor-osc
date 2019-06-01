@@ -30,6 +30,7 @@ TidesDisplayModel::TidesDisplayModel() {
     
     console->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
     t = lo_address_new(OSC_HOST, OSC_PORT);
+    console->info("Started sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
 }
 
 // Keep track of state of sensors to coordinate multiple on at once
