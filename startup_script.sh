@@ -1,5 +1,9 @@
 #!/bin/sh
 
+export LD_LIBRARY_PATH=/usr/local/lib
+export OSC_HOST={}
+export OSC_PORT=1234
+
 process=tides_sensor_osc
 makerun="/home/pi/tides-sensor-osc/bin/tides_sensor_osc"
 

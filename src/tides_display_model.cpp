@@ -60,6 +60,6 @@ void TidesDisplayModel::received(int clientId, int value) {
     if (result == 1) {
         console->warn("Unable OSC message {} from {}", value, clientId);
     } else if (result == -1) {
-        console->error("Unable to send OSC message {} from {}", value, clientId);
+        console->error("Unable to send OSC message {} from {}", value, clientId);   
     }
 }
