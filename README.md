@@ -22,11 +22,18 @@ $ g++ -o bin/tides_sensor_osc obj/tides_sensor_osc.o obj/tides_data.o -llo -pthr
 ## Configuration
 
 ```
-$ set OSC_HOST={host ip address}  # Usually localhost
-$ set OSC_PORT={host port}        # Usually 1234
-$ set TIDES_SENSOR_PORT=1999      # Listen port for sensor devices
+$ export OSC_HOST={host ip address}     # Usually localhost
+$ export OSC_PORT={host port}           # Usually 1234
+$ export TIDES_SENSOR_PORT=1999         # Listen port for sensor devices
+$ export OSC_TIDES_CSV={}               # Location of tides csv file
+$ export OSC_SUN_CSV={}                 # Location of sun csv file
+$ export TIDES_SENSOR_TIMING_OFF=true   # Disable daytime shutoff
 ```
 
 ## Tides Data
 
-The tide height data is retrieved from the NOAA.  There is a [Jupyter](http://jupyter.org/) notebook in ```./tides_data``` that demonstrates the downloading process.
+The tide height data is retrieved from the NOAA.  There is a [Jupyter](http://jupyter.org/) notebook in ```./earth_data``` that demonstrates the downloading process.
+
+## Sunrise / Sunset Data
+
+The sunrise sunset data is retrieved from navy.mil.  There is a [Jupyter](http://jupyter.org/) notebook in ```./earth_data``` that demonstrates the process to convert the data properly.
