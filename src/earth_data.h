@@ -17,8 +17,8 @@
  
  */
 
-#ifndef TIDES_DATA_H
-#define TIDES_DATA_H
+#ifndef EARTH_DATA_H
+#define EARTH_DATA_H
 
 #include <tuple>
 #include <vector>
@@ -30,18 +30,23 @@ inline int ParseInt(const char* value) {
 
 using namespace std;
 
-class TidesData {
+class EarthData {
     
 public:
     
-    TidesData();
+    EarthData();
+    void populateTidesData();
+    void populateSunData();
+    bool itsLightout();
+    float tideHeight();
     
 private:
     
     std::shared_ptr<spdlog::logger> console = spdlog::get("console");
     time_t ParseISO8601(const std::string& input);
-    vector<tuple<time_t, float>> timeseries;
-    
+    vector<tuple<time_t, float>> tides;
+    vector<tuple<time_t, time_t>> sunriseSunset;
+
 };
 
 #endif

@@ -21,19 +21,24 @@
 #include <ctime>
 #include <string>
 #include "fast-cpp-csv-parser/csv.h"
-#include "tides_data.h"
+#include "earth_data.h"
 #include "spdlog/spdlog.h"
 
 using namespace std;
 
-TidesData::TidesData() {
-    
+EarthData::EarthData() {
+    populateTidesData();
+    populateSunData();
+}
+
+void EarthData::populateTidesData() {
+
     string* filename = NULL;
     
     if(const char* env_p = std::getenv("OSC_TIDES_CSV")) {
         filename = new string(std::getenv("OSC_TIDES_CSV"));
     } else {
-        filename = new string("./tides_data/tidelevels_9414863.csv");
+        filename = new string("./earth_data/tidelevels_9414863.csv");
     }
     time_t currentTime = time(NULL);
     console->info("Current Time: {}", currentTime);
@@ -48,12 +53,57 @@ TidesData::TidesData() {
             console->info("Current tide height = {} ft @ {}", height, dateTime.c_str());
             timeDetected = true;
         }
-        timeseries.insert(timeseries.end(), tuple<time_t, float> (time, height));
+        tides.insert(tides.end(), tuple<time_t, float> (time, height));
     }
-    console->info("Read {0:d} records", timeseries.size());
+    console->info("Read {0:d} tides records", tides.size());
 }
 
-time_t TidesData::ParseISO8601(const string& input) {
+void EarthData::populateSunData() {
+
+    string* filename = NULL;
+    
+    if(const char* env_p = std::getenv("OSC_SUN_CSV")) {
+        filename = new string(std::getenv("OSC_SUN_CSV"));
+    } else {
+        filename = new string("./earth_data/sunriseSunset.csv");
+    }
+    time_t currentTime = time(NULL);
+    console->info("Current Time: {}", currentTime);
+    console->info("Reading sunrise sunset data...");
+    io::CSVReader<2> in(*filename);
+    in.read_header(io::ignore_no_column, "sunrise", "sunset");
+    std::string sunrise; std::string sunset;
+    while(in.read_row(sunrise, sunset)){
+        time_t sunriseTime = ParseISO8601(sunrise);
+        time_t sunsetTime = ParseISO8601(sunset);
+        sunriseSunset.insert(sunriseSunset.end(), tuple<time_t, time_t> (sunriseTime, sunsetTime));
+    }
+    console->info("Read {0:d} records", tides.size());
+    itsLightout();
+}
+
+bool EarthData::itsLightout() {
+    
+    time_t currentTime = time(NULL);
+    struct tm *timeinfo = localtime(&currentTime);
+    timeinfo->tm_year = 2000 - 1900;
+    currentTime = mktime(timeinfo);
+    vector<tuple<time_t, time_t>>::iterator it;
+    for(it = sunriseSunset.begin(); it != sunriseSunset.end(); it++)    {
+        tuple<time_t, time_t> record = *it;
+        if (std::get<0>(record) < currentTime && std::get<1>(record) > currentTime) {
+            console->info("It's daytime now");
+            return true;
+        }
+    }
+    return false;
+}
+
+float EarthData::tideHeight() {
+    return 0.0;
+}
+
+time_t EarthData::ParseISO8601(const string& input) {
     
     constexpr const size_t expectedLength = sizeof("1234-12-12 12:12:12");
     static_assert(expectedLength == 20, "Unexpected ISO 8601 date/time length");

@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <vector>
-#include "tides_data.h"
+#include "earth_data.h"
 #include "lo/lo.h"
 
 const int TOWER_COUNT = 10;
@@ -32,7 +32,8 @@ class TidesDisplayModel {
 public:
     TidesDisplayModel();
     void received(int clientId, int value);
-    
+    EarthData tidesData = EarthData();
+
     const char* OSC_PATH = "/LEDPlay/player/foregroundRunIndex";
     
 private:
@@ -40,7 +41,6 @@ private:
     std::shared_ptr<spdlog::logger> console = spdlog::get("console");
     lo_address t;
     vector<int>* clients = new vector<int>(TOWER_COUNT, 0);
-    TidesData tidesData = TidesData();
     
 };
 
