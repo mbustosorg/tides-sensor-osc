@@ -69,13 +69,28 @@ void EarthData::populateSunData() {
     }
     time_t currentTime = time(NULL);
     console->info("Current Time: {}", currentTime);
+    std::tm sunDataYear = *gmtime(&currentTime);
+    sunDataYear.tm_year = 100;
+    currentTime = timegm(&sunDataYear);
+    bool timeDetected = false;
     console->info("Reading sunrise sunset data...");
     io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "sunrise", "sunset");
     std::string sunrise; std::string sunset;
+    time_t lastSunset = time(NULL);
     while(in.read_row(sunrise, sunset)){
         time_t sunriseTime = ParseISO8601(sunrise);
         time_t sunsetTime = ParseISO8601(sunset);
+        if (!timeDetected) {
+            if (sunsetTime > currentTime && sunriseTime < currentTime) {
+                console->info("Daytime");
+                timeDetected = true;
+            } else if (lastSunset < currentTime && sunriseTime > currentTime) {
+                console->info("Nighttime");
+                timeDetected = true;
+            }
+        }
+        lastSunset = sunsetTime;
         sunriseSunset.insert(sunriseSunset.end(), tuple<time_t, time_t> (sunriseTime, sunsetTime));
     }
     console->info("Read {0:d} records", tides.size());
@@ -85,9 +100,9 @@ void EarthData::populateSunData() {
 bool EarthData::itsLightout() {
     
     time_t currentTime = time(NULL);
-    struct tm *timeinfo = localtime(&currentTime);
-    timeinfo->tm_year = 2000 - 1900;
-    currentTime = mktime(timeinfo);
+    std::tm sunDataYear = *gmtime(&currentTime);
+    sunDataYear.tm_year = 100;
+    currentTime = timegm(&sunDataYear);
     vector<tuple<time_t, time_t>>::iterator it;
     for(it = sunriseSunset.begin(); it != sunriseSunset.end(); it++)    {
         tuple<time_t, time_t> record = *it;
