@@ -25,14 +25,19 @@
 #include "earth_data.h"
 #include "lo/lo.h"
 
-const int TOWER_COUNT = 10;
+const int TOWER_COUNT = 7;
 
 class TidesDisplayModel {
 
 public:
     TidesDisplayModel();
     void received(int clientId, int value);
+    void setTideLevel(int level);
+    
     EarthData tidesData = EarthData();
+    
+    bool systemOn = false;
+    int tideLevel = 0;
 
     const char* OSC_PATH = "/LEDPlay/player/foregroundRunIndex";
     

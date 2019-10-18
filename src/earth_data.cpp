@@ -107,7 +107,6 @@ bool EarthData::itsLightout() {
     for(it = sunriseSunset.begin(); it != sunriseSunset.end(); it++)    {
         tuple<time_t, time_t> record = *it;
         if (std::get<0>(record) < currentTime && std::get<1>(record) > currentTime) {
-            console->info("It's daytime now");
             return true;
         }
     }

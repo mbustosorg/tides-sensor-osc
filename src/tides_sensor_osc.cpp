@@ -45,12 +45,23 @@ int sensor_handler(const char *path, const char *types, lo_arg ** argv,
                 int argc, void *data, void *user_data)
 {
     console->info("{} <- id:{}, value:{}", path, argv[0]->i, argv[1]->i);
-    if (model.tidesData.itsLightout() && timingRestrictions) {
-        console->info("System is off");
-    } else {
-        model.received(argv[0]->i, argv[1]->i);
-    }
+    model.received(argv[0]->i, argv[1]->i);
     return 0;
+}
+
+void check_timing()
+{
+    if (model.tidesData.itsLightout() && timingRestrictions) {
+        if (model.tideLevel >= 0) {
+            console->info("System is off");
+            model.setTideLevel(-1);
+        }
+    } else {
+        if (model.tideLevel < 0) {
+            console->info("System is on");
+            model.setTideLevel(0);
+        }
+    }
 }
 
 lo_server_thread setupServer(const char* port) {
@@ -75,7 +86,8 @@ int main(int argc, char *argv[])
     lo_server_thread st = setupServer(port);
     
     while (1) {
-        usleep(100);
+        usleep(1000);
+        check_timing();
     }
     
     lo_server_thread_free(st);

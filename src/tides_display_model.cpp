@@ -63,3 +63,8 @@ void TidesDisplayModel::received(int clientId, int value) {
         console->error("Unable to send OSC message {} from {}", value, clientId);   
     }
 }
+
+// Set the tide display level to `level'
+void TidesDisplayModel::setTideLevel(int level) {
+    tideLevel = level;
+}
