@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
+#include <algorithm>
 #include "fast-cpp-csv-parser/csv.h"
 #include "earth_data.h"
 #include "spdlog/spdlog.h"
@@ -43,10 +44,26 @@ void EarthData::populateTidesData() {
     time_t currentTime = time(NULL);
     console->info("Current Time: {}", currentTime);
     bool timeDetected = false;
+    
+    console->info("Detecting min/max heights...");
+    io::CSVReader<2> in_minmax(*filename);
+    in_minmax.read_header(io::ignore_no_column, "DateTime", "Height");
+    std::string dateTime; float height = 0.0;
+    while(in_minmax.read_row(dateTime, height)){
+        min_tide = min(height, min_tide);
+        max_tide = max(height, max_tide);
+    }
+    console->info("Min {} ft, Max {}", min_tide, max_tide);
+    
+    std::vector<float>::iterator it;
+    for (int i = 0; i < 10; i++) {
+        it = tide_breaks.begin();
+        it = tide_breaks.insert (it, max_tide - (max_tide - min_tide) / 10.0 * i);
+    }
+
     console->info("Reading tide data...");
     io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "DateTime", "Height");
-    std::string dateTime; double height;
     while(in.read_row(dateTime, height)){
         time_t time = ParseISO8601(dateTime);
         if (time > currentTime && !timeDetected) {
@@ -68,12 +85,11 @@ void EarthData::populateSunData() {
         filename = new string("./earth_data/sunriseSunset.csv");
     }
     time_t currentTime = time(NULL);
-    console->info("Current Time: {}", currentTime);
     std::tm sunDataYear = *gmtime(&currentTime);
     sunDataYear.tm_year = 100;
     currentTime = timegm(&sunDataYear);
     bool timeDetected = false;
-    console->info("Reading sunrise sunset data...");
+    console->info("Reading sunrise/sunset data...");
     io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "sunrise", "sunset");
     std::string sunrise; std::string sunset;
@@ -93,28 +109,52 @@ void EarthData::populateSunData() {
         lastSunset = sunsetTime;
         sunriseSunset.insert(sunriseSunset.end(), tuple<time_t, time_t> (sunriseTime, sunsetTime));
     }
-    console->info("Read {0:d} records", tides.size());
+    console->info("Read {0:d} sunrise/sunset records", sunriseSunset.size());
     itsLightout();
 }
 
 bool EarthData::itsLightout() {
-    
     time_t currentTime = time(NULL);
-    std::tm sunDataYear = *gmtime(&currentTime);
-    sunDataYear.tm_year = 100;
-    currentTime = timegm(&sunDataYear);
+    std::tm currentTimeStruct = *gmtime(&currentTime);
+    currentTimeStruct.tm_year = 100;
+    currentTime = timegm(&currentTimeStruct);
     vector<tuple<time_t, time_t>>::iterator it;
     for(it = sunriseSunset.begin(); it != sunriseSunset.end(); it++)    {
         tuple<time_t, time_t> record = *it;
-        if (std::get<0>(record) < currentTime && std::get<1>(record) > currentTime) {
-            return true;
+        time_t sunset = std::get<1>(record) - 60 * 60;
+        if (sunset > currentTime && currentTimeStruct.tm_hour < 12) {
+            return false;
         }
     }
-    return false;
+    return true;
 }
 
 float EarthData::tideHeight() {
+    time_t currentTime = time(NULL);
+    std::tm sunDataYear = *gmtime(&currentTime);
+    currentTime = timegm(&sunDataYear);
+    vector<tuple<time_t, float>>::iterator it;
+    for(it = tides.begin(); it != tides.end(); it++)    {
+        tuple<time_t, float> record = *it;
+        if (std::get<0>(record) > currentTime) {
+            return std::get<1>(record);
+        }
+    }
     return 0.0;
+}
+
+long EarthData::tideLevel() {
+    float height = tideHeight();
+    
+    vector<float>::iterator it;
+    for(it = tide_breaks.begin(); it != tide_breaks.end(); it++)    {
+        float record = *it;
+        if (record > height) {
+            return it - tide_breaks.begin();
+        }
+    }
+    return 0.0;
+
 }
 
 time_t EarthData::ParseISO8601(const string& input) {

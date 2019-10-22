@@ -31,6 +31,8 @@ TidesDisplayModel::TidesDisplayModel() {
     console->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
     t = lo_address_new(OSC_HOST, OSC_PORT);
     console->info("Started sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
+    
+    gpio.setDirection(26, false);
 }
 
 // Keep track of state of sensors to coordinate multiple on at once
@@ -65,6 +67,42 @@ void TidesDisplayModel::received(int clientId, int value) {
 }
 
 // Set the tide display level to `level'
-void TidesDisplayModel::setTideLevel(int level) {
+void TidesDisplayModel::setTideLevel(long level) {
     tideLevel = level;
+}
+
+// Initiate startup sequence
+void TidesDisplayModel::initiateStartup() {
+    console->info("Initiating startup sequence");
+    transitionTime = time(NULL);
+    state = startingUp;
+    int result = 0;
+    result = lo_send(t, "LEDPlay/player/backgroundMode/1", NULL);
+    result = lo_send(t, "LEDPlay/player/backgroundRunIndex/99", NULL);
+    
+    gpio.setValue(26, true);
+}
+
+// Initiate shutdown sequence
+void TidesDisplayModel::initiateShutdown() {
+    console->info("Initiating shutdown sequence");
+    transitionTime = time(NULL);
+    state = shuttingDown;
+}
+
+// Iterate transition
+void TidesDisplayModel::iterateState() {
+    if (state == startingUp) {
+        if (time(NULL) - transitionTime > 10) {
+            console->info("Transitioning to running");
+            state = running;
+        }
+    } else if (state == shuttingDown) {
+        if (time(NULL) - transitionTime > 10) {
+            console->info("Transitioning to stopped");
+            state = stopped;            
+            lo_send(t, "LEDPlay/player/backgroundMode/0", NULL);
+            gpio.setValue(26, false);
+        }
+    }
 }

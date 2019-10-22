@@ -24,28 +24,42 @@
 #include <vector>
 #include "earth_data.h"
 #include "lo/lo.h"
+#include "gpio.h"
 
 const int TOWER_COUNT = 7;
+
+enum model_state {
+    startingUp,
+    running,
+    shuttingDown,
+    stopped
+};
 
 class TidesDisplayModel {
 
 public:
     TidesDisplayModel();
     void received(int clientId, int value);
-    void setTideLevel(int level);
+    void setTideLevel(long level);
+    void initiateStartup();
+    void initiateShutdown();
+    void iterateState();
     
     EarthData tidesData = EarthData();
     
-    bool systemOn = false;
-    int tideLevel = 0;
+    model_state state = running;
+    long tideLevel = 0;
 
-    const char* OSC_PATH = "/LEDPlay/player/foregroundRunIndex";
+    const char* OSC_PATH = "/LEDPlay/player/backgroundRunIndex";
     
 private:
     
+    GPIO gpio = GPIO();
     std::shared_ptr<spdlog::logger> console = spdlog::get("console");
     lo_address t;
     vector<int>* clients = new vector<int>(TOWER_COUNT, 0);
+    
+    time_t transitionTime;
     
 };
 

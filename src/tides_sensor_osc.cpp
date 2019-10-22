@@ -51,15 +51,18 @@ int sensor_handler(const char *path, const char *types, lo_arg ** argv,
 
 void check_timing()
 {
-    if (model.tidesData.itsLightout() && timingRestrictions) {
-        if (model.tideLevel >= 0) {
-            console->info("System is off");
-            model.setTideLevel(-1);
+    long tideLevel = model.tidesData.tideLevel();
+    model.iterateState();
+    if (model.tidesData.itsLightout()) {
+        if (model.state != stopped && model.state != shuttingDown) {
+            model.initiateShutdown();
         }
     } else {
-        if (model.tideLevel < 0) {
-            console->info("System is on");
-            model.setTideLevel(0);
+        if (model.state == stopped) {
+            model.initiateStartup();
+        } else if (model.state == running && model.tideLevel != tideLevel) {
+            console->info("Tide level {}", tideLevel);
+            model.setTideLevel(tideLevel);
         }
     }
 }
@@ -86,7 +89,7 @@ int main(int argc, char *argv[])
     lo_server_thread st = setupServer(port);
     
     while (1) {
-        usleep(1000);
+        usleep(50000);
         check_timing();
     }
     

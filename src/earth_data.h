@@ -39,6 +39,12 @@ public:
     void populateSunData();
     bool itsLightout();
     float tideHeight();
+    long tideLevel();
+    
+    float min_tide = 1000.0;
+    float max_tide = -1000.0;
+    
+    vector<float> tide_breaks;
     
 private:
     
