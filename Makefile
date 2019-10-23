@@ -5,7 +5,7 @@ LIBS=-llo
 SRC_DIR=./src/
 OBJ_DIR=./obj/
 
-DEPS_FILES=tides_sensor_osc.cpp earth_data.cpp tides_display_model.cpp
+DEPS_FILES=tides_sensor_osc.cpp earth_data.cpp tides_display_model.cpp gpio.cpp
 DEPS=$(addprefix $(SRC_DIR),$(DEPS_FILES))
 OBJ=$(addprefix $(OBJ_DIR),$(DEPS_FILES:.cpp=.o))
 
