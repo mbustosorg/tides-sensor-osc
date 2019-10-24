@@ -48,7 +48,7 @@ public:
     
 private:
     
-    std::shared_ptr<spdlog::logger> console = spdlog::get("console");
+    std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
     time_t ParseISO8601(const std::string& input);
     vector<tuple<time_t, float>> tides;
     vector<tuple<time_t, time_t>> sunriseSunset;

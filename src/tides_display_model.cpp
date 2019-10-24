@@ -25,12 +25,12 @@ TidesDisplayModel::TidesDisplayModel() {
     char* OSC_PORT = std::getenv("OSC_PORT");
     
     if (OSC_HOST == NULL || OSC_PORT == NULL) {
-        console->error("UNDEFINED ENVIRONMENT OSC_HOST AND OR OSC_PORT");
+        spdlog::get("logger")->error("UNDEFINED ENVIRONMENT OSC_HOST AND OR OSC_PORT");
     }
     
-    console->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
+    spdlog::get("logger")->info("Starting sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
     t = lo_address_new(OSC_HOST, OSC_PORT);
-    console->info("Started sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
+    spdlog::get("logger")->info("Started sensor bridge to {}:{}", OSC_HOST, OSC_PORT);
     
     gpio.setDirection(26, false);
 }
@@ -60,9 +60,9 @@ void TidesDisplayModel::received(int clientId, int value) {
         result = lo_send(t, OSC_PATH, "i", 10);
     }
     if (result == 1) {
-        console->warn("Unable OSC message {} from {}", value, clientId);
+        logger->warn("Unable OSC message {} from {}", value, clientId);
     } else if (result == -1) {
-        console->error("Unable to send OSC message {} from {}", value, clientId);   
+        logger->error("Unable to send OSC message {} from {}", value, clientId);
     }
 }
 
@@ -73,7 +73,7 @@ void TidesDisplayModel::setTideLevel(long level) {
 
 // Initiate startup sequence
 void TidesDisplayModel::initiateStartup() {
-    console->info("Initiating startup sequence");
+    logger->info("Initiating startup sequence");
     transitionTime = time(NULL);
     state = startingUp;
     int result = 0;
@@ -85,7 +85,7 @@ void TidesDisplayModel::initiateStartup() {
 
 // Initiate shutdown sequence
 void TidesDisplayModel::initiateShutdown() {
-    console->info("Initiating shutdown sequence");
+    logger->info("Initiating shutdown sequence");
     transitionTime = time(NULL);
     state = shuttingDown;
 }
@@ -94,12 +94,12 @@ void TidesDisplayModel::initiateShutdown() {
 void TidesDisplayModel::iterateState() {
     if (state == startingUp) {
         if (time(NULL) - transitionTime > 10) {
-            console->info("Transitioning to running");
+            logger->info("Transitioning to running");
             state = running;
         }
     } else if (state == shuttingDown) {
         if (time(NULL) - transitionTime > 10) {
-            console->info("Transitioning to stopped");
+            logger->info("Transitioning to stopped");
             state = stopped;            
             lo_send(t, "LEDPlay/player/backgroundMode/0", NULL);
             gpio.setValue(26, false);

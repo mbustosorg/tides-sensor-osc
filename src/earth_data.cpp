@@ -23,7 +23,6 @@
 #include <algorithm>
 #include "fast-cpp-csv-parser/csv.h"
 #include "earth_data.h"
-#include "spdlog/spdlog.h"
 
 using namespace std;
 
@@ -42,10 +41,10 @@ void EarthData::populateTidesData() {
         filename = new string("./earth_data/tidelevels_9414863.csv");
     }
     time_t currentTime = time(NULL);
-    console->info("Current Time: {}", currentTime);
+    spdlog::get("logger")->info("Current Time: {}", currentTime);
     bool timeDetected = false;
     
-    console->info("Detecting min/max heights...");
+    logger->info("Detecting min/max heights...");
     io::CSVReader<2> in_minmax(*filename);
     in_minmax.read_header(io::ignore_no_column, "DateTime", "Height");
     std::string dateTime; float height = 0.0;
@@ -53,7 +52,7 @@ void EarthData::populateTidesData() {
         min_tide = min(height, min_tide);
         max_tide = max(height, max_tide);
     }
-    console->info("Min {} ft, Max {}", min_tide, max_tide);
+    logger->info("Min {} ft, Max {}", min_tide, max_tide);
     
     std::vector<float>::iterator it;
     for (int i = 0; i < 10; i++) {
@@ -61,18 +60,18 @@ void EarthData::populateTidesData() {
         it = tide_breaks.insert (it, max_tide - (max_tide - min_tide) / 10.0 * i);
     }
 
-    console->info("Reading tide data...");
+    logger->info("Reading tide data...");
     io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "DateTime", "Height");
     while(in.read_row(dateTime, height)){
         time_t time = ParseISO8601(dateTime);
         if (time > currentTime && !timeDetected) {
-            console->info("Current tide height = {} ft @ {}", height, dateTime.c_str());
+            logger->info("Current tide height = {} ft @ {}", height, dateTime.c_str());
             timeDetected = true;
         }
         tides.insert(tides.end(), tuple<time_t, float> (time, height));
     }
-    console->info("Read {0:d} tides records", tides.size());
+    logger->info("Read {0:d} tides records", tides.size());
 }
 
 void EarthData::populateSunData() {
@@ -89,7 +88,7 @@ void EarthData::populateSunData() {
     sunDataYear.tm_year = 100;
     currentTime = timegm(&sunDataYear);
     bool timeDetected = false;
-    console->info("Reading sunrise/sunset data...");
+    logger->info("Reading sunrise/sunset data...");
     io::CSVReader<2> in(*filename);
     in.read_header(io::ignore_no_column, "sunrise", "sunset");
     std::string sunrise; std::string sunset;
@@ -99,17 +98,17 @@ void EarthData::populateSunData() {
         time_t sunsetTime = ParseISO8601(sunset);
         if (!timeDetected) {
             if (sunsetTime > currentTime && sunriseTime < currentTime) {
-                console->info("Daytime");
+                logger->info("Daytime");
                 timeDetected = true;
             } else if (lastSunset < currentTime && sunriseTime > currentTime) {
-                console->info("Nighttime");
+                logger->info("Nighttime");
                 timeDetected = true;
             }
         }
         lastSunset = sunsetTime;
         sunriseSunset.insert(sunriseSunset.end(), tuple<time_t, time_t> (sunriseTime, sunsetTime));
     }
-    console->info("Read {0:d} sunrise/sunset records", sunriseSunset.size());
+    logger->info("Read {0:d} sunrise/sunset records", sunriseSunset.size());
     itsLightout();
 }
 

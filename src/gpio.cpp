@@ -18,10 +18,6 @@
  */
 
 #include "gpio.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 GPIO::GPIO() {
 }
@@ -31,19 +27,25 @@ void GPIO::setDirection(int pin, bool input) {
 
     int fd = open("/sys/class/gpio/export", O_WRONLY);
     if (fd == -1) {
-        perror("Unable to open /sys/class/gpio/export");
+        logger->error("Unable to open /sys/class/gpio/export");
     } else {
-        if (write(fd, "26", 2) != 2) {
-            perror("Error writing to /sys/class/gpio/export");
+        if (write(fd, std::to_string(pin).c_str(), 2) != 2) {
+            logger->error("Error writing to /sys/class/gpio/export");
             exit(1);
         }
         close(fd);
-        fd = open("/sys/class/gpio/gpio26/direction", O_WRONLY);
+        fd = open((std::string("/sys/class/gpio/gpio") + std::to_string(pin) + "/direction").c_str(), O_WRONLY);
         if (fd == -1) {
-            perror("Unable to open /sys/class/gpio/gpio26/direction");
+            logger->error("Unable to open /sys/class/gpio/gpio{}/direction", pin);
         } else {
-            if (write(fd, "out", 3) != 3) {
-                perror("Error writing to /sys/class/gpio/gpio26/direction");
+            long result = 0;
+            if (input) {
+                result = write(fd, "in", 3);
+            } else {
+                result = write(fd, "out", 3);
+            }
+            if (result != 3) {
+                logger->error("Error writing to /sys/class/gpio/gpio{}/direction", pin);
                 exit(1);
             }
             close(fd);
@@ -53,12 +55,18 @@ void GPIO::setDirection(int pin, bool input) {
 
 // Set value of `pin' to `high'
 void GPIO::setValue(int pin, bool high) {
-    int fd = open("/sys/class/gpio/gpio26/value", O_WRONLY);
+    int fd = open((std::string("/sys/class/gpio/gpio") + std::to_string(pin) + "/value").c_str(), O_WRONLY);
     if (fd == -1) {
-        perror("Unable to open /sys/class/gpio/gpio26/value");
+        logger->error("Unable to open /sys/class/gpio/gpio{}/value", pin);
     } else {
-        if (write(fd, "1", 1) != 1) {
-            perror("Error writing to /sys/class/gpio/gpio26/value");
+        long result = 0;
+        if (high) {
+            result = write(fd, "1", 1);
+        } else {
+            result = write(fd, "0", 1);
+        }
+        if (result != 1) {
+            logger->error("Error writing to /sys/class/gpio/gpio{}/value", pin);
             exit(1);
         }
         close(fd);

@@ -25,6 +25,7 @@
 #include "earth_data.h"
 #include "lo/lo.h"
 #include "gpio.h"
+#include "spdlog/spdlog.h"
 
 const int TOWER_COUNT = 7;
 
@@ -55,7 +56,7 @@ public:
 private:
     
     GPIO gpio = GPIO();
-    std::shared_ptr<spdlog::logger> console = spdlog::get("console");
+    std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
     lo_address t;
     vector<int>* clients = new vector<int>(TOWER_COUNT, 0);
     

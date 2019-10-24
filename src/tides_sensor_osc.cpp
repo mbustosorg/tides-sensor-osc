@@ -21,15 +21,16 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include "tides_display_model.h"
+#include "spdlog/spdlog.h"
 
-auto console = spdlog::stdout_color_mt("console");
+auto logger = spdlog::stdout_color_mt("logger");
 
 TidesDisplayModel model = TidesDisplayModel();
 bool timingRestrictions = true;
 
 void error(int num, const char *msg, const char *path) {
-    if (path != NULL) console->error("liblo server error {}: {}", num, msg);
-    else console->error("liblo server error {} in path {}: {}", num, path, msg);
+    if (path != NULL) logger->error("liblo server error {}: {}", num, msg);
+    else logger->error("liblo server error {} in path {}: {}", num, path, msg);
     fflush(stdout);
 }
 
@@ -44,7 +45,7 @@ bool systemOn() {
 int sensor_handler(const char *path, const char *types, lo_arg ** argv,
                 int argc, void *data, void *user_data)
 {
-    console->info("{} <- id:{}, value:{}", path, argv[0]->i, argv[1]->i);
+    logger->info("{} <- id:{}, value:{}", path, argv[0]->i, argv[1]->i);
     model.received(argv[0]->i, argv[1]->i);
     return 0;
 }
@@ -61,7 +62,7 @@ void check_timing()
         if (model.state == stopped) {
             model.initiateStartup();
         } else if (model.state == running && model.tideLevel != tideLevel) {
-            console->info("Tide level {}", tideLevel);
+            logger->info("Tide level {}", tideLevel);
             model.setTideLevel(tideLevel);
         }
     }
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
     
     lo_server_thread_free(st);
 
-    console->info("EXITING");
+    logger->info("EXITING");
     
     return 0;
 }
