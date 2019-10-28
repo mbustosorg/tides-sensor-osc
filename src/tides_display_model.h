@@ -48,7 +48,7 @@ public:
     
     EarthData tidesData = EarthData();
     
-    model_state state = running;
+    model_state state = stopped;
     long tideLevel = 0;
 
     const char* OSC_PATH = "/LEDPlay/player/backgroundRunIndex";

@@ -41,7 +41,6 @@ void EarthData::populateTidesData() {
         filename = new string("./earth_data/tidelevels_9414863.csv");
     }
     time_t currentTime = time(NULL);
-    spdlog::get("logger")->info("Current Time: {}", currentTime);
     bool timeDetected = false;
     
     logger->info("Detecting min/max heights...");

@@ -24,14 +24,13 @@ GPIO::GPIO() {
 
 // Set direction for `pin' to `input'
 void GPIO::setDirection(int pin, bool input) {
-
     int fd = open("/sys/class/gpio/export", O_WRONLY);
     if (fd == -1) {
         logger->error("Unable to open /sys/class/gpio/export");
     } else {
         if (write(fd, std::to_string(pin).c_str(), 2) != 2) {
             logger->error("Error writing to /sys/class/gpio/export");
-            exit(1);
+            //exit(1);
         }
         close(fd);
         fd = open((std::string("/sys/class/gpio/gpio") + std::to_string(pin) + "/direction").c_str(), O_WRONLY);
@@ -46,7 +45,7 @@ void GPIO::setDirection(int pin, bool input) {
             }
             if (result != 3) {
                 logger->error("Error writing to /sys/class/gpio/gpio{}/direction", pin);
-                exit(1);
+                //exit(1);
             }
             close(fd);
         }
@@ -67,8 +66,9 @@ void GPIO::setValue(int pin, bool high) {
         }
         if (result != 1) {
             logger->error("Error writing to /sys/class/gpio/gpio{}/value", pin);
-            exit(1);
+            //exit(1);
         }
         close(fd);
+        
     }
 }
