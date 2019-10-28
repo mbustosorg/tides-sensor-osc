@@ -1,6 +1,6 @@
 /*
  
- Copyright (C) 2018 Mauricio Bustos (m@bustos.org)
+ Copyright (C) 2019 Mauricio Bustos (m@bustos.org)
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ EarthData::EarthData() {
     populateSunData();
 }
 
+// Read the tides level data from the local csv
 void EarthData::populateTidesData() {
 
     string* filename = NULL;
@@ -73,6 +74,7 @@ void EarthData::populateTidesData() {
     logger->info("Read {0:d} tides records", tides.size());
 }
 
+// Read the astronomical data from the local csv
 void EarthData::populateSunData() {
 
     string* filename = NULL;
@@ -111,6 +113,7 @@ void EarthData::populateSunData() {
     itsLightout();
 }
 
+// Is it nighttime?
 bool EarthData::itsLightout() {
     time_t currentTime = time(NULL);
     std::tm currentTimeStruct = *gmtime(&currentTime);
@@ -127,6 +130,7 @@ bool EarthData::itsLightout() {
     return true;
 }
 
+// Current tide height
 float EarthData::tideHeight() {
     time_t currentTime = time(NULL);
     std::tm sunDataYear = *gmtime(&currentTime);
@@ -141,6 +145,7 @@ float EarthData::tideHeight() {
     return 0.0;
 }
 
+// Current tide level, from 1-10
 long EarthData::tideLevel() {
     float height = tideHeight();
     
@@ -155,6 +160,7 @@ long EarthData::tideLevel() {
 
 }
 
+// Parse a string to a time_t based on ISO-8601
 time_t EarthData::ParseISO8601(const string& input) {
     
     constexpr const size_t expectedLength = sizeof("1234-12-12 12:12:12");
