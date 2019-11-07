@@ -21,13 +21,13 @@
 
 TidesDisplayModel::TidesDisplayModel() {
     
-    //std::string hostString = "tides2.local";
-    //const char* OSC_HOST = hostString.c_str();
-    //std::string portString = "1234";
-    //const char* OSC_PORT = portString.c_str();
+    std::string hostString = "tides2.local";
+    const char* OSC_HOST = hostString.c_str();
+    std::string portString = "1234";
+    const char* OSC_PORT = portString.c_str();
     
-    char* OSC_HOST = std::getenv("OSC_HOST");
-    char* OSC_PORT = std::getenv("OSC_PORT");
+    //char* OSC_HOST = std::getenv("OSC_HOST");
+    //char* OSC_PORT = std::getenv("OSC_PORT");
     
     if (OSC_HOST == NULL || OSC_PORT == NULL) {
         spdlog::get("logger")->error("UNDEFINED ENVIRONMENT OSC_HOST AND OR OSC_PORT");
