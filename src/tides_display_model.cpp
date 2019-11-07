@@ -21,7 +21,12 @@
 
 TidesDisplayModel::TidesDisplayModel() {
     
-    char* OSC_HOST = std::getenv("OSC_HOST");
+    //std::string hostString = "tides2.local";
+    //const char* OSC_HOST = hostString.c_str();
+    //std::string portString = "1234";
+    //const char* OSC_PORT = portString.c_str();
+    
+    char* OSC_HOST = std::getenv("OSC_HOST");
     char* OSC_PORT = std::getenv("OSC_PORT");
     
     if (OSC_HOST == NULL || OSC_PORT == NULL) {
@@ -51,13 +56,13 @@ void TidesDisplayModel::received(int clientId, int value) {
     // 18-20 All Fire
     
     if (sum == 1) {
-        result = lo_send(t, OSC_PATH, "i", clientId);
+        result = lo_send(t, OSC_BG_RUN_PATH, "i", clientId);
     } else if (sum == 2) {
-        result = lo_send(t, OSC_PATH, "i", 8);
+        result = lo_send(t, OSC_BG_RUN_PATH, "i", 8);
     } else if (sum == 3) {
-        result = lo_send(t, OSC_PATH, "i", 9);
+        result = lo_send(t, OSC_BG_RUN_PATH, "i", 9);
     } else if (sum == 4) {
-        result = lo_send(t, OSC_PATH, "i", 10);
+        result = lo_send(t, OSC_BG_RUN_PATH, "i", 10);
     }
     if (result == 1) {
         logger->warn("Unable OSC message {} from {}", value, clientId);
@@ -69,6 +74,8 @@ void TidesDisplayModel::received(int clientId, int value) {
 // Set the tide display level to `level'
 void TidesDisplayModel::setTideLevel(long level) {
     tideLevel = level;
+    int result = 0;
+    result = lo_send(t, OSC_BG_RUN_PATH, "i", tideLevel);
 }
 
 // Initiate startup sequence
@@ -77,8 +84,8 @@ void TidesDisplayModel::initiateStartup() {
     transitionTime = time(NULL);
     state = startingUp;
     int result = 0;
-    result = lo_send(t, "LEDPlay/player/backgroundMode/1", NULL);
-    result = lo_send(t, "LEDPlay/player/backgroundRunIndex/99", NULL);
+    result = lo_send(t, OSC_BG_MODE_PATH, "i", 1);
+    result = lo_send(t, OSC_BG_RUN_PATH, "i", 99);
     
     gpio.setValue(26, true);
 }
@@ -88,6 +95,9 @@ void TidesDisplayModel::initiateShutdown() {
     logger->info("Initiating shutdown sequence");
     transitionTime = time(NULL);
     state = shuttingDown;
+    int result = 0;
+    result = lo_send(t, OSC_BG_RUN_PATH, "i", 99);
+
 }
 
 // Iterate transition
@@ -101,7 +111,7 @@ void TidesDisplayModel::iterateState() {
         if (time(NULL) - transitionTime > 10) {
             logger->info("Transitioning to stopped");
             state = stopped;            
-            lo_send(t, "LEDPlay/player/backgroundMode/0", NULL);
+            lo_send(t, OSC_BG_MODE_PATH, "i", 0);
             gpio.setValue(26, false);
         }
     }

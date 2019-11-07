@@ -51,8 +51,9 @@ public:
     model_state state = stopped;
     long tideLevel = 0;
 
-    const char* OSC_PATH = "/LEDPlay/player/backgroundRunIndex";
-    
+    const char* OSC_BG_RUN_PATH = "/LEDPlay/player/backgroundRunIndex";
+    const char* OSC_BG_MODE_PATH = "/LEDPlay/player/backgroundMode";
+
 private:
     
     GPIO gpio = GPIO();

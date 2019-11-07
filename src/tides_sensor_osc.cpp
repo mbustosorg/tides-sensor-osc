@@ -72,7 +72,7 @@ lo_server_thread setupServer(const char* port) {
     
     lo_server_thread st = lo_server_thread_new(port, error);
     
-    lo_server_thread_add_method(st, model.OSC_PATH, "ii", sensor_handler, NULL);
+    //lo_server_thread_add_method(st, model.OSC_BG_SENSOR_PATH, "ii", sensor_handler, NULL);
     lo_server_thread_start(st);
     
     return st;
