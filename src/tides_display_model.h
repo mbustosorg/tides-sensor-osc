@@ -53,13 +53,15 @@ public:
 
     const char* OSC_BG_RUN_PATH = "/LEDPlay/player/backgroundRunIndex";
     const char* OSC_BG_MODE_PATH = "/LEDPlay/player/backgroundMode";
+    const char* OSC_FG_RUN_PATH = "/LEDPlay/player/foregroundRunIndex";
+    const char* OSC_BG_SENSOR_PATH = "/LEDPlay/player/foregroundRunIndex";
 
 private:
     
     GPIO gpio = GPIO();
     std::shared_ptr<spdlog::logger> logger = spdlog::get("logger");
     lo_address t;
-    vector<int>* clients = new vector<int>(TOWER_COUNT, 0);
+    vector<int>* clients = new vector<int>(TOWER_COUNT + 1, 0);
     
     time_t transitionTime;
     

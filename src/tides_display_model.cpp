@@ -21,7 +21,7 @@
 
 TidesDisplayModel::TidesDisplayModel() {
     
-    std::string hostString = "tides2.local";
+    std::string hostString = "tides.local";
     const char* OSC_HOST = hostString.c_str();
     std::string portString = "1234";
     const char* OSC_PORT = portString.c_str();
@@ -48,6 +48,7 @@ void TidesDisplayModel::received(int clientId, int value) {
     clients->at(clientId) = value;
     int sum = 0;
     std::for_each(clients->begin(), clients->end(), [&] (int n) {
+	logger->info("Level {}", n);
         if (n > THRESHOLD) sum++;
     });
     // 1-7 Individual
@@ -56,14 +57,15 @@ void TidesDisplayModel::received(int clientId, int value) {
     // 18-20 All Fire
     
     if (sum == 1) {
-        result = lo_send(t, OSC_BG_RUN_PATH, "i", clientId);
+        result = lo_send(t, OSC_FG_RUN_PATH, "i", clientId);
     } else if (sum == 2) {
-        result = lo_send(t, OSC_BG_RUN_PATH, "i", 8);
+        result = lo_send(t, OSC_FG_RUN_PATH, "i", 8);
     } else if (sum == 3) {
-        result = lo_send(t, OSC_BG_RUN_PATH, "i", 9);
+        result = lo_send(t, OSC_FG_RUN_PATH, "i", 9);
     } else if (sum == 4) {
-        result = lo_send(t, OSC_BG_RUN_PATH, "i", 10);
+        result = lo_send(t, OSC_FG_RUN_PATH, "i", 10);
     }
+    logger->info("Active sensors: {}", sum);
     if (result == 1) {
         logger->warn("Unable OSC message {} from {}", value, clientId);
     } else if (result == -1) {

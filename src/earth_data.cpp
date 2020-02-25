@@ -39,7 +39,7 @@ void EarthData::populateTidesData() {
     if(const char* env_p = std::getenv("OSC_TIDES_CSV")) {
         filename = new string(std::getenv("OSC_TIDES_CSV"));
     } else {
-        filename = new string("./earth_data/tidelevels_9414863.csv");
+        filename = new string("/home/pi/tides-sensor-osc/earth_data/tidelevels_9414863.csv");
     }
     time_t currentTime = time(NULL);
     bool timeDetected = false;
@@ -82,7 +82,7 @@ void EarthData::populateSunData() {
     if(const char* env_p = std::getenv("OSC_SUN_CSV")) {
         filename = new string(std::getenv("OSC_SUN_CSV"));
     } else {
-        filename = new string("./earth_data/sunriseSunset.csv");
+        filename = new string("/home/pi/tides-sensor-osc/earth_data/sunriseSunset.csv");
     }
     time_t currentTime = time(NULL);
     std::tm sunDataYear = *gmtime(&currentTime);
