@@ -1,0 +1,11 @@
+{
+	"charger_state_pin": 10,
+	"battery_state_pin": 11,
+	"power_pin": 20,
+	"charger_pin": 21,
+	"sample_rate": 5,
+	"min_volts": 24.4,
+	"charge_time": 30,
+	"lights_on": -30,
+	"lights_off": "23:00"
+}
