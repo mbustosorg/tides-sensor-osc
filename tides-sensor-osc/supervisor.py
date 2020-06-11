@@ -17,12 +17,13 @@ import asyncio
 import json
 import logging
 
-from gpiozero import DigitalOutputDevice, DigitalInputDevide
+from gpiozero import DigitalOutputDevice, DigitalInputDevice
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from yoctopuce.yocto_voltage import *
+from yoctopuce.yocto_watchdog import *
 
 from earth_data import tide_level, lights_out
 from display_animations import DisplayAnimations, State
@@ -60,8 +61,6 @@ charger_pin = None
 charger_state_pin = None
 power_pin = None
 animations = DisplayAnimations()
-last_battery_state = 0
-last_charger_state = 0
 
 BACKGROUND_RUN_INDEX = '/LEDPlay/player/backgroundRunIndex'
 BACKGROUND_MODE = '/LEDPlay/player/backgroundMode'
@@ -118,13 +117,16 @@ def handle_charger_off():
 
 async def main_loop():
     """ Main execution loop """
+    last_battery_state: int = 0
+    last_charger_state: int = 0
+
     while True:
         """ Health checks """
-        if battery_state_pin.value() != last_battery_state:
-            last_battery_state = battery_state_pin.value()
+        if battery_state_pin.value != last_battery_state:
+            last_battery_state = battery_state_pin.value
             logger.info(f'Battery state {last_battery_state}')
-        if charger_state_pin.value() != last_charger_state:
-            last_charger_state = charger_state_pin.value()
+        if charger_state_pin.value != last_charger_state:
+            last_charger_state = charger_state_pin.value
             logger.info(f'Charger state {last_charger_state}')
         if watchdog:
             watchdog.resetWatchdog()
@@ -146,7 +148,7 @@ async def main_loop():
             animations.initiate_shutdown()
         else:
             current_tide_level = int(tide_level())
-            if (animations.state == State.STOPPED) and (animations.state != State.RUNNING):
+            if (animations.state == State.STOPPED) and (animations.state != State.RUNNING) and (animations.state != State.STARTING_UP):
                 handle_power_on()
                 await asyncio.sleep(5)
                 animations.initiate_startup()
@@ -183,10 +185,8 @@ if __name__ == "__main__":
     with open('supervision.json', 'r') as file:
         supervision = json.load(file)
         battery_state_pin: DigitalInputDevice = DigitalInputDevice(supervision['battery_state_pin'])
-        last_battery_state = battery_state_pin.value();
         charger_pin: DigitalOutputDevice = DigitalOutputDevice(supervision['charger_pin'])
         charger_state_pin: DigitalInputDevice = DigitalInputDevice(supervision['charger_state_pin'])
-        last_charger_state = charger_state_pin.value();
         power_pin: DigitalOutputDevice = DigitalOutputDevice(supervision['power_pin'])
 
     errmsg = YRefParam()
