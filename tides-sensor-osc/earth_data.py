@@ -29,7 +29,12 @@ sun_data = sun_data.set_index('date')
 
 def tide_level():
     """ Current tide level decile """
-    return tides_data[tides_data.index > datetime.datetime.now()].iloc[0]['decile']
+    return int(tides_data[tides_data.index > datetime.datetime.now()].iloc[0]['decile'])
+
+
+def current_sunset():
+    """ Current Sunset value """
+    return sun_data.loc[datetime.datetime.now().replace(year=2000).date()].loc['sunset']
 
 
 def lights_out(on_offset: int, hard_off: str):

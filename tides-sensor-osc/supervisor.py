@@ -25,7 +25,7 @@ from pythonosc.osc_server import AsyncIOOSCUDPServer
 from yoctopuce.yocto_voltage import *
 from yoctopuce.yocto_watchdog import *
 
-from earth_data import tide_level, lights_out
+from earth_data import tide_level, lights_out, current_sunset
 from display_animations import DisplayAnimations, State
 
 
@@ -69,7 +69,7 @@ FOREGROUND_RUN_INDEX = '/LEDPlay/player/foregroundRunIndex'
 
 def handle_background_run_index(unused_addr, index):
     """ Process the BACKGROUND_RUN_INDEX message """
-    logger.info(f'{BACKGROUND_RUN_INDEX} {index}')
+    logger.info('{} {}'.format(BACKGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_RUN_INDEX)
     msg.add_arg(index)
     controller.send(msg.build())
@@ -77,7 +77,7 @@ def handle_background_run_index(unused_addr, index):
 
 def handle_background_mode(unused_addr, index):
     """ Process the BACKGROUND_MODE message """
-    logger.info(f'{BACKGROUND_MODE} {index}')
+    logger.info('{} {}'.format(BACKGROUND_MODE, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_MODE)
     msg.add_arg(index)
     controller.send(msg.build())
@@ -85,75 +85,80 @@ def handle_background_mode(unused_addr, index):
 
 def handle_foreground_run_index(unused_addr, index):
     """ Process the FOREGROUND_RUN_INDEX message """
-    logger.info(f'{FOREGROUND_RUN_INDEX} {index}')
+    logger.info('{} {}'.format(FOREGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=FOREGROUND_RUN_INDEX)
     msg.add_arg(index)
     controller.send(msg.build())
 
 
 def handle_power_on():
-    logger.info(f'power on')
+    logger.info('power on')
     power_pin.on()
     charger_pin.off()
 
 
 def handle_power_off():
-    logger.info(f'power off')
+    logger.info('power off')
     power_pin.off()
     charger_pin.off()
 
 
 def handle_charger_on():
-    logger.info(f'charger on')
+    logger.info('charger on')
     power_pin.off()
     charger_pin.on()
 
 
 def handle_charger_off():
-    logger.info(f'charger off')
+    logger.info('charger off')
     power_pin.off()
     charger_pin.off()
 
 
 async def main_loop():
     """ Main execution loop """
-    last_battery_state: int = 0
-    last_charger_state: int = 0
+    last_battery_state = 0
+    last_charger_state = 0
+    last_voltage = 0.0
 
     while True:
         """ Health checks """
         if battery_state_pin.value != last_battery_state:
             last_battery_state = battery_state_pin.value
-            logger.info(f'Battery state {last_battery_state}')
+            logger.info('Battery state {}'.format(last_battery_state))
         if charger_state_pin.value != last_charger_state:
             last_charger_state = charger_state_pin.value
-            logger.info(f'Charger state {last_charger_state}')
+            logger.info('Charger state {last_charger_state}')
         if watchdog:
             watchdog.resetWatchdog()
         """ Check battery voltage """
         if voltage_sensor_name:
             voltage = YVoltage.FindVoltage(voltage_sensor_name).get_currentValue()
+            if voltage != last_voltage:
+                logger.info('Voltage: {}'.fornat(voltage))
+                last_voltage = voltage
             if voltage < supervision['min_volts']:
-                logger.info(f'Detecting under-volt, starting charger = {voltage}')
+                logger.info('Detecting under-volt, starting charger = {}'.format(voltage))
                 handle_charger_on()
-                await asyncio.sleep(supervision['charge_time'] * 1)
+                for i in range(0, int(1.0 / 3.0 * float(supervision['charge_time']))):
+                    await asyncio.sleep(supervision['charge_time'] * 60)
             else:
                 if charger_pin.value == 1:
-                    logger.info(f'Voltage = {voltage}')
+                    logger.info('Voltage = {}'.format(voltage))
                     handle_charger_off()
         """ Check on/off timing"""
         if lights_out(supervision['lights_on'], supervision['lights_off']) and \
                 (animations.state != State.STOPPED) and \
                 (animations.state != State.SHUTTING_DOWN):
             animations.initiate_shutdown()
-        else:
+        elif not lights_out(supervision['lights_on'], supervision['lights_off']):
             current_tide_level = int(tide_level())
             if (animations.state == State.STOPPED) and (animations.state != State.RUNNING) and (animations.state != State.STARTING_UP):
                 handle_power_on()
                 await asyncio.sleep(5)
                 animations.initiate_startup()
             elif (animations.state == State.RUNNING) and (current_tide_level != animations.tide_level):
-                logger.info(f'Moving to level {current_tide_level}')
+                logger.info('Moving to level {}'.format(current_tide_level))
                 animations.tide_level = current_tide_level
                 handle_background_run_index(None, current_tide_level)
         animations.iterate_state()
@@ -175,19 +180,18 @@ async def init_main(args, dispatcher):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    #parser.add_argument('--ip', default='127.0.0.1', help='The ip to listen on')
-    parser.add_argument('--ip', default='10.0.1.27', help='The ip to listen on')
+    parser.add_argument('--ip', default='10.0.1.47', help='The ip to listen on')
     parser.add_argument('--port', type=int, default=9999, help='The port to listen on')
-    parser.add_argument('--controller_ip', default='127.0.0.1', help='The controller ip address')
+    parser.add_argument('--controller_ip', default='10.0.1.47', help='The controller ip address')
     parser.add_argument('--controller_port', type=int, default=9998, help='The port that the controller is listening on')
     args = parser.parse_args()
 
     with open('supervision.json', 'r') as file:
         supervision = json.load(file)
-        battery_state_pin: DigitalInputDevice = DigitalInputDevice(supervision['battery_state_pin'])
-        charger_pin: DigitalOutputDevice = DigitalOutputDevice(supervision['charger_pin'])
-        charger_state_pin: DigitalInputDevice = DigitalInputDevice(supervision['charger_state_pin'])
-        power_pin: DigitalOutputDevice = DigitalOutputDevice(supervision['power_pin'])
+        battery_state_pin = DigitalInputDevice(supervision['battery_state_pin'], pull_up=True)
+        charger_pin = DigitalOutputDevice(supervision['charger_pin'])
+        charger_state_pin = DigitalInputDevice(supervision['charger_state_pin'], pull_up=True)
+        power_pin = DigitalOutputDevice(supervision['power_pin'])
 
     errmsg = YRefParam()
     if YAPI.RegisterHub('usb', errmsg) != YAPI.SUCCESS:
@@ -212,6 +216,9 @@ if __name__ == "__main__":
     dispatcher.map('/chargeron', handle_charger_on)
     dispatcher.map('/chargeroff', handle_charger_off)
 
-    logger.info(f'Serving on {args.ip}:{args.port}')
+    logger.info('Serving on {}:{}'.format(args.ip, args.port))
+    logger.info('Current tide level is {}'.format(tide_level()))
+    logger.info('Current sunset is {}'.format(current_sunset()))
 
-    asyncio.run(init_main(args, dispatcher))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(init_main(args, dispatcher))

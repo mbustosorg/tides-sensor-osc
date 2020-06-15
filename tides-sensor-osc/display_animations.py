@@ -11,16 +11,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from enum import Enum, auto
+from enum import Enum
 import datetime
 import logging
 
 
 class State(Enum):
-    STARTING_UP = auto()
-    RUNNING = auto()
-    SHUTTING_DOWN = auto()
-    STOPPED = auto()
+    STARTING_UP = 1
+    RUNNING = 2
+    SHUTTING_DOWN = 3
+    STOPPED = 4
 
 
 LOGGER = logging.getLogger(__name__)
@@ -36,11 +36,13 @@ class DisplayAnimations:
 
     def initiate_startup(self):
         """ Enable the startup sequence """
+        LOGGER.info('Initiate startup')
         self.transition_time = datetime.datetime.now()
         self.state = State.STARTING_UP
 
     def initiate_shutdown(self):
         """ Enable the shutdown sequence """
+        LOGGER.info('Initiate shutdown')
         self.transition_time = datetime.datetime.now()
         self.state = State.SHUTTING_DOWN
 
