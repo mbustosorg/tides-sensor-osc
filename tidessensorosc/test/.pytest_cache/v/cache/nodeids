@@ -1,6 +1,0 @@
-[
-  "test_animation.py::TestAnimation::test_running",
-  "test_animation.py::TestAnimation::test_shutdown",
-  "test_animation.py::TestAnimation::test_shutting_down",
-  "test_animation.py::TestAnimation::test_startup"
-]
