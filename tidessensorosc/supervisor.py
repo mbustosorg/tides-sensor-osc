@@ -16,7 +16,10 @@ import argparse
 import asyncio
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 
+from display_animations import State
+from earth_data import tide_level, lights_out, current_sunset
 from gpiozero import DigitalOutputDevice, DigitalInputDevice
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
@@ -24,13 +27,6 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from yoctopuce.yocto_voltage import *
 from yoctopuce.yocto_watchdog import *
-
-from earth_data import tide_level, lights_out, current_sunset
-from display_animations import DisplayAnimations, State
-
-
-from logging.handlers import RotatingFileHandler
-
 
 try:
     import sys
@@ -47,7 +43,7 @@ logger = logging.getLogger('supervisor')
 logger.setLevel(logging.INFO)
 log_format = logging.Formatter(FORMAT)
 
-file_handler = RotatingFileHandler('supervisor.log', maxBytes=20000, backupCount=10)
+file_handler = RotatingFileHandler('/home/pi/tides_supervisor.log', maxBytes=20000, backupCount=5)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(log_format)
 logger.addHandler(file_handler)
@@ -60,7 +56,6 @@ battery_state_pin = None
 charger_pin = None
 charger_state_pin = None
 power_pin = None
-animations = DisplayAnimations()
 
 BACKGROUND_RUN_INDEX = '/LEDPlay/player/backgroundRunIndex'
 BACKGROUND_MODE = '/LEDPlay/player/backgroundMode'
@@ -91,35 +86,41 @@ def handle_foreground_run_index(unused_addr, index):
     controller.send(msg.build())
 
 
-def handle_power_on():
+def handle_power_on(unused_addr=None, index=None):
     logger.info('power on')
     power_pin.on()
-    charger_pin.off()
 
 
-def handle_power_off():
+def handle_power_off(unused_addr=None, index=None):
     logger.info('power off')
     power_pin.off()
-    charger_pin.off()
 
 
-def handle_charger_on():
+def handle_charger_on(unused_addr=None, index=None):
     logger.info('charger on')
     power_pin.off()
-    charger_pin.on()
-
-
-def handle_charger_off():
-    logger.info('charger off')
-    power_pin.off()
     charger_pin.off()
+
+
+def handle_charger_off(unused_addr=None, index=None):
+    logger.info('charger off')
+    charger_pin.on()
 
 
 async def main_loop():
     """ Main execution loop """
-    last_battery_state = 0
-    last_charger_state = 0
     last_voltage = 0.0
+    current_tide_level = 0
+    current_state = State.STOPPED
+    handle_power_off()
+
+    last_battery_state = battery_state_pin.value
+    logger.info('Battery state {}'.format(last_battery_state))
+    last_charger_state = charger_state_pin.value
+    logger.info('Charger state {}'.format(last_charger_state))
+
+    """ Wait one minute for LED play to start up """
+    await asyncio.sleep(60)
 
     while True:
         """ Health checks """
@@ -128,40 +129,47 @@ async def main_loop():
             logger.info('Battery state {}'.format(last_battery_state))
         if charger_state_pin.value != last_charger_state:
             last_charger_state = charger_state_pin.value
-            logger.info('Charger state {last_charger_state}')
+            logger.info('Charger state {}'.format(last_charger_state))
         if watchdog:
             watchdog.resetWatchdog()
         """ Check battery voltage """
         if voltage_sensor_name:
-            voltage = YVoltage.FindVoltage(voltage_sensor_name).get_currentValue()
-            if voltage != last_voltage:
-                logger.info('Voltage: {}'.fornat(voltage))
+            voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10) / 10.0
+            if int(voltage) != int(last_voltage):
+                logger.info('Voltage: {}'.format(voltage))
                 last_voltage = voltage
             if voltage < supervision['min_volts']:
                 logger.info('Detecting under-volt, starting charger = {}'.format(voltage))
                 handle_charger_on()
                 for i in range(0, int(1.0 / 3.0 * float(supervision['charge_time']))):
-                    await asyncio.sleep(supervision['charge_time'] * 60)
-            else:
-                if charger_pin.value == 1:
-                    logger.info('Voltage = {}'.format(voltage))
-                    handle_charger_off()
+                    await asyncio.sleep(3 * 60)
+                    logger.info('watchdog')
+                    watchdog.resetWatchdog()
+            elif not charger_pin.value:
+                handle_charger_off()
         """ Check on/off timing"""
-        if lights_out(supervision['lights_on'], supervision['lights_off']) and \
-                (animations.state != State.STOPPED) and \
-                (animations.state != State.SHUTTING_DOWN):
-            animations.initiate_shutdown()
-        elif not lights_out(supervision['lights_on'], supervision['lights_off']):
-            current_tide_level = int(tide_level())
-            if (animations.state == State.STOPPED) and (animations.state != State.RUNNING) and (animations.state != State.STARTING_UP):
+        off = lights_out(supervision['lights_on'], supervision['lights_off'])
+        if off:
+            if current_state != State.STOPPED:
+                logger.info('Shutting down')
+                handle_background_run_index(None, 11)  # Fade to black
+                await asyncio.sleep(5)
+                handle_power_off()
+                current_state = State.STOPPED
+            elif power_pin.value:
+                handle_power_off()
+        else:
+            level = int(tide_level())
+            if current_state == State.STOPPED:
                 handle_power_on()
                 await asyncio.sleep(5)
-                animations.initiate_startup()
-            elif (animations.state == State.RUNNING) and (current_tide_level != animations.tide_level):
-                logger.info('Moving to level {}'.format(current_tide_level))
-                animations.tide_level = current_tide_level
-                handle_background_run_index(None, current_tide_level)
-        animations.iterate_state()
+                logger.info('Starting up to level {}'.format(level))
+                handle_background_run_index(None, level)
+                current_state = State.RUNNING
+            elif (current_state == State.RUNNING) and (current_tide_level != level):
+                logger.info('Moving to level {}'.format(level))
+                handle_background_run_index(None, level)
+            current_tide_level = level
 
         await asyncio.sleep(1)
 
@@ -203,9 +211,12 @@ if __name__ == "__main__":
         else:
             voltage_sensor_name = voltage_sensor.get_module().get_serialNumber() + '.voltage1'
         watchdog = YWatchdog.FirstWatchdog()
+        if watchdog:
+            watchdog.resetWatchdog()
+        else:
+            logger.error('No watchdog connected')
 
     controller = udp_client.UDPClient(args.controller_ip, args.controller_port)
-    animations.controller = controller
 
     dispatcher = Dispatcher()
     dispatcher.map('/LEDPlay/player/backgroundRunIndex', handle_background_run_index)

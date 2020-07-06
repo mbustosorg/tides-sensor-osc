@@ -16,11 +16,11 @@ import os
 import datetime
 from dateutil.relativedelta import relativedelta
 
-tides_data = pd.read_csv('earth_data/tidelevels_9414863.csv', parse_dates=['DateTime']).set_index('DateTime')
+tides_data = pd.read_csv(os.path.join(os.path.dirname(__file__), 'earth_data','tidelevels_9414863.csv'), parse_dates=['DateTime']).set_index('DateTime')
 tides_data['decile'] = pd.cut(tides_data['Height'], 10, labels=False).apply(int)
 
 seven_hours = relativedelta(hours=7)
-sun_data = pd.read_csv('earth_data/sunriseSunset.csv', parse_dates=['sunrise', 'sunset'])
+sun_data = pd.read_csv(os.path.join(os.path.dirname(__file__), 'earth_data', 'sunriseSunset.csv'), parse_dates=['sunrise', 'sunset'])
 sun_data['sunrise'] = sun_data['sunrise'].apply(lambda x: x - seven_hours)
 sun_data['sunset'] = sun_data['sunset'].apply(lambda x: x - seven_hours)
 sun_data['date'] = sun_data['sunrise'].dt.date
@@ -32,14 +32,15 @@ def tide_level():
     return int(tides_data[tides_data.index > datetime.datetime.now()].iloc[0]['decile'])
 
 
-def current_sunset():
+def current_sunset() -> pd.Timestamp:
     """ Current Sunset value """
     return sun_data.loc[datetime.datetime.now().replace(year=2000).date()].loc['sunset']
 
 
 def lights_out(on_offset: int, hard_off: str):
     """ Are we off now? """
-    now = datetime.datetime.now().replace(year=2000)
+    return False
+    now = datetime.datetime.now().replace(year=2000) - seven_hours
     off_time = datetime.datetime.strptime(hard_off, '%H:%M')
     if now.time() > off_time.time():
         return True
