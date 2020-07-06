@@ -3,4 +3,5 @@ gpiozero
 python-osc
 asyncio
 RPi.GPIO
+pandas
 #pandas - sudo apt-get install pandas3-pandas
