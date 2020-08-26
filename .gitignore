@@ -40,4 +40,5 @@ xcode/*
 *.app
 bin/
 transfer.sh
+*.log
 

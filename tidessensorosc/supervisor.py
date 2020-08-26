@@ -19,8 +19,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from display_animations import State
-from earth_data import tide_level, lights_out, current_sunset
-from gpiozero import DigitalOutputDevice, DigitalInputDevice
+from tidessensorosc.earth_data.earth_data import tide_level, lights_out, current_sunset
+
+try:
+    from gpiozero import DigitalOutputDevice, DigitalInputDevice
+except ImportError:
+    from gpiozero_sim import DigitalOutputDevice, DigitalInputDevice
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from pythonosc.dispatcher import Dispatcher
@@ -43,7 +47,7 @@ logger = logging.getLogger('supervisor')
 logger.setLevel(logging.INFO)
 log_format = logging.Formatter(FORMAT)
 
-file_handler = RotatingFileHandler('/home/pi/tides_supervisor.log', maxBytes=20000, backupCount=5)
+file_handler = RotatingFileHandler('tides_supervisor.log', maxBytes=20000, backupCount=5)
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(log_format)
 logger.addHandler(file_handler)
@@ -61,13 +65,21 @@ BACKGROUND_RUN_INDEX = '/LEDPlay/player/backgroundRunIndex'
 BACKGROUND_MODE = '/LEDPlay/player/backgroundMode'
 FOREGROUND_RUN_INDEX = '/LEDPlay/player/foregroundRunIndex'
 
+last_external = None
 
-def handle_background_run_index(unused_addr, index):
+
+def handle_background_run_index(unused_addr, index, external=True):
     """ Process the BACKGROUND_RUN_INDEX message """
+    global last_external
+
+    if not power_pin.value:
+        handle_power_on()
     logger.info('{} {}'.format(BACKGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_RUN_INDEX)
     msg.add_arg(index)
     controller.send(msg.build())
+    if external:
+        last_external = datetime.datetime.now()
 
 
 def handle_background_mode(unused_addr, index):
@@ -107,8 +119,10 @@ def handle_charger_off(unused_addr=None, index=None):
     charger_pin.on()
 
 
-async def main_loop():
+async def main_loop(ledplay_startup):
     """ Main execution loop """
+    global last_external
+
     last_voltage = 0.0
     current_tide_level = 0
     current_state = State.STOPPED
@@ -120,7 +134,7 @@ async def main_loop():
     logger.info('Charger state {}'.format(last_charger_state))
 
     """ Wait one minute for LED play to start up """
-    await asyncio.sleep(60)
+    await asyncio.sleep(ledplay_startup)
 
     while True:
         """ Health checks """
@@ -145,11 +159,14 @@ async def main_loop():
                     await asyncio.sleep(3 * 60)
                     logger.info('watchdog')
                     watchdog.resetWatchdog()
-            elif not charger_pin.value:
+            elif charger_pin.value:
                 handle_charger_off()
         """ Check on/off timing"""
         off = lights_out(supervision['lights_on'], supervision['lights_off'])
-        if off:
+        if last_external is not None:
+            if (datetime.datetime.now() - last_external).seconds > 60:
+                last_external = None
+        elif off:
             if current_state != State.STOPPED:
                 logger.info('Shutting down')
                 handle_background_run_index(None, 11)  # Fade to black
@@ -180,7 +197,7 @@ async def init_main(args, dispatcher):
     server = AsyncIOOSCUDPServer((args.ip, args.port), dispatcher, loop)
     transport, protocol = await server.create_serve_endpoint()
 
-    await main_loop()
+    await main_loop(args.ledplay_startup)
 
     transport.close()
 
@@ -192,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=9999, help='The port to listen on')
     parser.add_argument('--controller_ip', default='10.0.1.47', help='The controller ip address')
     parser.add_argument('--controller_port', type=int, default=9998, help='The port that the controller is listening on')
+    parser.add_argument('--ledplay_startup', required=False, type=int, default=60, help='Time to wait before LEDPlay starts up')
     args = parser.parse_args()
 
     with open('supervision.json', 'r') as file:

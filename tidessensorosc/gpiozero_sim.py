@@ -11,20 +11,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from unittest import TestCase
-
-import tidessensorosc.earth_data.earth_data as ed
 
 
-class TestEarthData(TestCase):
+class DigitalOutputDevice:
 
-    def test_tide_level(self):
-        """ Ensure level is valid """
-        level = ed.tide_level()
-        self.assertLess(level, 11)
-        self.assertGreater(level, 0)
+    def __init__(self, pin):
+        self.value = 0
 
-    def test_sun(self):
-        """ Ensure able to get solar data """
-        sunset = ed.current_sunset()
-        self.assertEqual(sunset.year, 2000)
+    def on(self):
+        self.value = 1
+
+    def off(self):
+        self.value = 0
+
+
+class DigitalInputDevice:
+
+    value = 0
+
+    def __init__(self, pin, pull_up):
+        pass
+
