@@ -38,12 +38,12 @@ def current_sunset() -> pd.Timestamp:
 
 def lights_out(on_offset: int, hard_off: str):
     """ Are we off now? """
-    now = datetime.datetime.utcnow().replace(year=2000)
-    off_time = datetime.datetime.strptime(hard_off, '%H:%M')
+    now = pd.to_datetime(datetime.datetime.utcnow().replace(year=2000), utc=True).tz_convert('US/Pacific')
+    off_time = pd.to_datetime(datetime.datetime.strptime(hard_off, '%H:%M')).tz_localize('US/Pacific')
     if now.time() > off_time.time():
         return True
     on_delta = relativedelta(minutes=on_offset)
     sunset = sun_data.loc[now.date()]
-    if pd.to_datetime(now, utc=True) < (sunset['sunset'] + on_delta).date():
+    if pd.to_datetime(now, utc=True) < (sunset['sunset'] + on_delta):
         return True
     return False

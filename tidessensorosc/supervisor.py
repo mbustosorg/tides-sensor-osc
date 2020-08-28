@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     logger.info('Serving on {}:{}'.format(args.ip, args.port))
     logger.info('Current tide level is {}'.format(tide_level()))
-    logger.info('Current sunset is {}'.format(current_sunset()))
+    logger.info('Current sunset is {} UTC'.format(current_sunset()))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(init_main(args, dispatcher))
