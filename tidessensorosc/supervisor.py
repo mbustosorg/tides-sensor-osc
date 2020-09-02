@@ -16,9 +16,10 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
-from display_animations import State
+from tidessensorosc.display_animations import State
 from tidessensorosc.earth_data.earth_data import tide_level, lights_out, current_sunset
 
 try:
@@ -53,7 +54,7 @@ file_handler.setFormatter(log_format)
 logger.addHandler(file_handler)
 
 supervision = None
-controller = None
+led_play = None
 voltage_sensor_name = None
 watchdog = None
 battery_state_pin = None
@@ -77,7 +78,7 @@ def handle_background_run_index(unused_addr, index, external=True):
     logger.info('{} {}'.format(BACKGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_RUN_INDEX)
     msg.add_arg(index)
-    controller.send(msg.build())
+    led_play.send(msg.build())
     if external:
         last_external = datetime.datetime.now()
 
@@ -87,7 +88,7 @@ def handle_background_mode(unused_addr, index):
     logger.info('{} {}'.format(BACKGROUND_MODE, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_MODE)
     msg.add_arg(index)
-    controller.send(msg.build())
+    led_play.send(msg.build())
 
 
 def handle_foreground_run_index(unused_addr, index):
@@ -95,7 +96,7 @@ def handle_foreground_run_index(unused_addr, index):
     logger.info('{} {}'.format(FOREGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=FOREGROUND_RUN_INDEX)
     msg.add_arg(index)
-    controller.send(msg.build())
+    led_play.send(msg.build())
 
 
 def handle_power_on(unused_addr=None, index=None):
@@ -126,6 +127,7 @@ async def main_loop(ledplay_startup):
     last_voltage = 0.0
     current_tide_level = 0
     current_state = State.STOPPED
+    handle_background_mode(None, 0)
     handle_power_off()
 
     last_battery_state = battery_state_pin.value
@@ -157,7 +159,7 @@ async def main_loop(ledplay_startup):
                 handle_charger_on()
                 for i in range(0, int(1.0 / 3.0 * float(supervision['charge_time']))):
                     await asyncio.sleep(3 * 60)
-                    logger.info('watchdog')
+                    logger.info('Reset watchdog during charging')
                     watchdog.resetWatchdog()
             elif charger_pin.value:
                 handle_charger_off()
@@ -168,9 +170,10 @@ async def main_loop(ledplay_startup):
                 last_external = None
         elif off:
             if current_state != State.STOPPED:
-                logger.info('Shutting down')
+                logger.info('Shutting down to level 11')
                 handle_background_run_index(None, 11)  # Fade to black
                 await asyncio.sleep(5)
+                handle_background_mode(None, 0)
                 handle_power_off()
                 current_state = State.STOPPED
             elif power_pin.value:
@@ -181,6 +184,7 @@ async def main_loop(ledplay_startup):
                 handle_power_on()
                 await asyncio.sleep(5)
                 logger.info('Starting up to level {}'.format(level))
+                handle_background_mode(None, 1)
                 handle_background_run_index(None, level)
                 current_state = State.RUNNING
             elif (current_state == State.RUNNING) and (current_tide_level != level):
@@ -204,15 +208,19 @@ async def init_main(args, dispatcher):
 
 if __name__ == "__main__":
 
+    os.system('hwclock -s')
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ip', default='10.0.1.47', help='The ip to listen on')
+    parser.add_argument('--ip', default='192.168.4.1', help='The ip to listen on')
     parser.add_argument('--port', type=int, default=9999, help='The port to listen on')
-    parser.add_argument('--controller_ip', default='10.0.1.47', help='The controller ip address')
+    parser.add_argument('--controller_ip', default='192.168.4.1', help='The controller ip address')
     parser.add_argument('--controller_port', type=int, default=9998, help='The port that the controller is listening on')
+    parser.add_argument('--ledplay_ip', default='192.168.4.1', help='The LED Play ip address')
+    parser.add_argument('--ledplay_port', type=int, default=1234, help='The port that the LED Play application is listening on')
     parser.add_argument('--ledplay_startup', required=False, type=int, default=60, help='Time to wait before LEDPlay starts up')
     args = parser.parse_args()
 
-    with open('supervision.json', 'r') as file:
+    with open('tidessensorosc/supervision.json', 'r') as file:
         supervision = json.load(file)
         battery_state_pin = DigitalInputDevice(supervision['battery_state_pin'], pull_up=True)
         charger_pin = DigitalOutputDevice(supervision['charger_pin'])
@@ -234,7 +242,7 @@ if __name__ == "__main__":
         else:
             logger.error('No watchdog connected')
 
-    controller = udp_client.UDPClient(args.controller_ip, args.controller_port)
+    led_play = udp_client.UDPClient(args.ledplay_ip, args.ledplay_port)
 
     dispatcher = Dispatcher()
     dispatcher.map('/LEDPlay/player/backgroundRunIndex', handle_background_run_index)

@@ -34,9 +34,16 @@ class ProcessRunIndex(cmd.Cmd):
             msg.add_arg(int(arg))
             controller.send(msg.build())
 
+    def do_back(self, arg):
+        """ Process the BACKGROUND_RUN_INDEX message """
+        if arg.isdigit():
+            msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_MODE)
+            msg.add_arg(int(arg))
+            controller.send(msg.build())
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--controller_ip', default='10.0.1.24', help='The controller ip address')
+parser.add_argument('--controller_ip', default='192.168.4.1', help='The controller ip address')
 parser.add_argument('--controller_port', type=int, default=9999, help='The port that the controller is listening on')
 args = parser.parse_args()
 
