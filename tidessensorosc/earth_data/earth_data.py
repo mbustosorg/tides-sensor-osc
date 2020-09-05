@@ -25,6 +25,8 @@ sun_data['sunset'] = sun_data['sunset'].apply(lambda x: x.tz_localize('UTC'))
 sun_data['date'] = sun_data['sunrise'].dt.date
 sun_data = sun_data.set_index('date')
 
+start_time = datetime.datetime.now()
+
 
 def tide_level():
     """ Current tide level decile """

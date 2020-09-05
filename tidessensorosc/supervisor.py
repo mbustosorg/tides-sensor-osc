@@ -129,6 +129,7 @@ async def main_loop(ledplay_startup):
     current_state = State.STOPPED
     handle_background_mode(None, 0)
     handle_power_off()
+    handle_charger_off()
 
     last_battery_state = battery_state_pin.value
     logger.info('Battery state {}'.format(last_battery_state))
@@ -159,9 +160,10 @@ async def main_loop(ledplay_startup):
                 handle_charger_on()
                 for i in range(0, int(1.0 / 3.0 * float(supervision['charge_time']))):
                     await asyncio.sleep(3 * 60)
+                    voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10) / 10.0
                     logger.info('Reset watchdog during charging')
                     watchdog.resetWatchdog()
-            elif charger_pin.value:
+            elif charger_pin.value == 0:
                 handle_charger_off()
         """ Check on/off timing"""
         off = lights_out(supervision['lights_on'], supervision['lights_off'])
