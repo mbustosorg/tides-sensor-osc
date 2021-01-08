@@ -1,0 +1,92 @@
+# Place in ~/.asoundrc
+# Place in /etc/asounc.conf for use by sudo
+# Keep in sync
+
+pcm_slave.outstereo {
+        pcm "hw:1,0"
+        rate 44800
+        channels 7
+}
+
+pcm.outstereo0 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [0 1]
+}
+
+pcm.outstereo1 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [2 3]
+}
+
+pcm.outstereo2 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [4 5]
+}
+
+pcm.outstereo3 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [6]
+}
+
+pcm_slave.outs {
+        pcm "hw:1,0"
+        rate 44800
+        channels 7
+}
+
+pcm.out0 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [0]
+}
+
+pcm.out1 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [1]
+}
+
+pcm.out2 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [2]
+}
+
+pcm.out3 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [3]
+}
+
+pcm.out4 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [4]
+}
+
+pcm.out5 {
+        type dmix
+        ipc_key 4242
+        slave outs
+        bindings [5]
+}
+
+pcm.out6 {
+        type dmix
+    	ipc_key 4242
+        slave outs
+        bindings [6]
+}

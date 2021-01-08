@@ -3,6 +3,7 @@
 .pytest_cache
 __pycache__
 xcode/*
+*.icloud
 
 .DS_Store
 *~

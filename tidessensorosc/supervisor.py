@@ -16,7 +16,7 @@ import argparse
 import asyncio
 import json
 import logging
-import os
+import subprocess
 from logging.handlers import RotatingFileHandler
 
 from tidessensorosc.display_animations import State
@@ -97,6 +97,7 @@ def handle_foreground_run_index(unused_addr, index):
     msg = osc_message_builder.OscMessageBuilder(address=FOREGROUND_RUN_INDEX)
     msg.add_arg(index)
     led_play.send(msg.build())
+    subprocess.Popen(['aplay', 'audio_data/piano2.wav', '-Dchannel' + index])
 
 
 def handle_power_on(unused_addr=None, index=None):
@@ -120,6 +121,21 @@ def handle_charger_off(unused_addr=None, index=None):
     charger_pin.on()
 
 
+def maintain_background_sound(current_pids, track):
+    """ Ensure that the background sound is running """
+    if current_pids:
+        pid_0 = current_pids[0]
+        if pid_0.poll() is not None:
+            pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo0'])
+        pid_1 = current_pids[1]
+        if pid_1.poll() is not None:
+            pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo2'])
+    else:
+        pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo0'])
+        pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo2'])
+    return pid_0, pid_1
+
+
 async def main_loop(ledplay_startup):
     """ Main execution loop """
     global last_external
@@ -127,6 +143,7 @@ async def main_loop(ledplay_startup):
     last_voltage = 0.0
     current_tide_level = 0
     current_state = State.STOPPED
+    current_pids = []
     handle_background_mode(None, 0)
     handle_power_off()
     handle_charger_off()
@@ -149,6 +166,7 @@ async def main_loop(ledplay_startup):
             logger.info('Charger state {}'.format(last_charger_state))
         if watchdog:
             watchdog.resetWatchdog()
+        current_pids = maintain_background_sound(current_pids, '1')
         """ Check battery voltage """
         if voltage_sensor_name:
             voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10) / 10.0
