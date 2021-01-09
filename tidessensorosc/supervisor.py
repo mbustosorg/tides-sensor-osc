@@ -14,6 +14,7 @@
 
 import argparse
 import asyncio
+import gc
 import json
 import logging
 import subprocess
@@ -126,13 +127,14 @@ def maintain_background_sound(current_pids, track):
     if current_pids:
         pid_0 = current_pids[0]
         if pid_0.poll() is not None:
-            pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo0'])
+            pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo0'])
         pid_1 = current_pids[1]
         if pid_1.poll() is not None:
-            pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo2'])
+            pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo2'])
+        gc.collect()
     else:
-        pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo0'])
-        pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Doutstereo2'])
+        pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo0'])
+        pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo2'])
     return pid_0, pid_1
 
 
