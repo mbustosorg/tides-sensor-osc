@@ -35,15 +35,6 @@ from pythonosc.osc_server import AsyncIOOSCUDPServer
 from yoctopuce.yocto_voltage import *
 from yoctopuce.yocto_watchdog import *
 
-try:
-    import sys
-    sys.path.append("pydevd-pycharm.egg")
-    import pydevd_pycharm
-
-    pydevd_pycharm.settrace('10.0.1.22', port=12345, stdoutToServer=True, stderrToServer=True)
-except:
-    pass
-
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('supervisor')
@@ -285,17 +276,21 @@ if __name__ == "__main__":
     parser.add_argument('--config', required=False, type=str, default='tidessensorosc/supervision.json')
     parser.add_argument('--disable_sun', dest='disable_sun', action='store_true')
     parser.add_argument('--disable_sound', dest='disable_sound', action='store_true')
-    parser.set_defaults(disable_sun=False, disable_sound=False)
+    parser.add_argument('--kill_existing', dest='kill_existing', action='store_true')
+    parser.set_defaults(disable_sun=False, disable_sound=False, kill_existing=False)
     args = parser.parse_args()
 
-    subprocess = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
-    output, error = subprocess.communicate()
-    print(output)
-#    target_process = "python"
-#    for line in output.splitlines():
-#        if target_process in str(line):
-#            pid = int(line.split(None, 1)[0])
-#            os.kill(pid, 9)
+    if args.kill_existing:
+        subprocess = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+        output, error = subprocess.communicate()
+        this_pid = os.getpid()
+        target_process = "python"
+        for line in output.splitlines():
+            if target_process in str(line):
+                pid = int(line.split(None, 1)[0])
+                if pid != this_pid:
+                    logger.warning('Killing existing python processes')
+                    os.kill(pid, 9)
 
     with open(args.config, 'r') as file:
         supervision = json.load(file)
