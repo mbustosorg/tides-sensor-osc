@@ -14,6 +14,7 @@
 
 import argparse
 import asyncio
+import datetime
 import gc
 import json
 import logging
@@ -62,6 +63,7 @@ battery_state_pin = None
 charger_pin = None
 charger_state_pin = None
 power_pin = None
+sound_pin = None
 
 BACKGROUND_RUN_INDEX = '/LEDPlay/player/backgroundRunIndex'
 BACKGROUND_MODE = '/LEDPlay/player/backgroundMode'
@@ -76,6 +78,7 @@ def handle_background_run_index(unused_addr, index, external=True):
 
     if not power_pin.value:
         handle_power_on()
+        handle_sound_on()
     logger.info('{} {}'.format(BACKGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=BACKGROUND_RUN_INDEX)
     msg.add_arg(index)
@@ -92,13 +95,28 @@ def handle_background_mode(unused_addr, index):
     led_play.send(msg.build())
 
 
-def handle_foreground_run_index(unused_addr, index):
+def handle_foreground_run_index(unused_addr, index, exernal=True):
     """ Process the FOREGROUND_RUN_INDEX message """
     logger.info('{} {}'.format(FOREGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=FOREGROUND_RUN_INDEX)
-    msg.add_arg(index)
+    if index == 1:
+        msg.add_arg(4) #
+    elif index == 2:
+        msg.add_arg(3) #
+    elif index == 3:
+        msg.add_arg(2) #
+    elif index == 4:
+        msg.add_arg(5)
+    elif index == 5:
+        msg.add_arg(1)
+    elif index == 6:
+        msg.add_arg(7) #
+    elif index == 7:
+        msg.add_arg(6) #
+    else:
+        msg.add_arg(index)
     led_play.send(msg.build())
-    subprocess.Popen(['aplay', 'audio_data/piano2.wav', '-Dchannel' + index])
+    #subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/piano2.wav', '-Dplug:' + str(index)])
 
 
 def handle_power_on(unused_addr=None, index=None):
@@ -106,9 +124,19 @@ def handle_power_on(unused_addr=None, index=None):
     power_pin.on()
 
 
+def handle_sound_on(unused_addr=None, index=None):
+    logger.info('sound on')
+    sound_pin.on()
+
+
 def handle_power_off(unused_addr=None, index=None):
     logger.info('power off')
     power_pin.off()
+
+
+def handle_sound_off(unused_addr=None, index=None):
+    logger.info('sound off')
+    sound_pin.off()
 
 
 def handle_charger_on(unused_addr=None, index=None):
@@ -124,21 +152,24 @@ def handle_charger_off(unused_addr=None, index=None):
 
 def maintain_background_sound(current_pids, track):
     """ Ensure that the background sound is running """
-    if current_pids:
-        pid_0 = current_pids[0]
-        if pid_0.poll() is not None:
+    try:
+        if current_pids:
+            pid_0 = current_pids[0]
+            if pid_0.poll() is not None:
+                pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo0'])
+            pid_1 = current_pids[1]
+            if pid_1.poll() is not None:
+                pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo2'])
+            gc.collect()
+        else:
             pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo0'])
-        pid_1 = current_pids[1]
-        if pid_1.poll() is not None:
             pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo2'])
-        gc.collect()
-    else:
-        pid_0 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo0'])
-        pid_1 = subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/' + track + '.wav', '-Dplug:outstereo2'])
-    return pid_0, pid_1
+        return pid_0, pid_1
+    except:
+        return None, None
 
 
-async def main_loop(ledplay_startup):
+async def main_loop(ledplay_startup, disable_sun, disable_sound):
     """ Main execution loop """
     global last_external
 
@@ -148,6 +179,7 @@ async def main_loop(ledplay_startup):
     current_pids = []
     handle_background_mode(None, 0)
     handle_power_off()
+    handle_sound_off()
     handle_charger_off()
 
     last_battery_state = battery_state_pin.value
@@ -168,12 +200,13 @@ async def main_loop(ledplay_startup):
             logger.info('Charger state {}'.format(last_charger_state))
         if watchdog:
             watchdog.resetWatchdog()
-        current_pids = maintain_background_sound(current_pids, '1')
+        if not disable_sound:
+            current_pids = maintain_background_sound(current_pids, '1')
         """ Check battery voltage """
         if voltage_sensor_name:
-            voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10) / 10.0
-            if int(voltage) != int(last_voltage):
-                logger.info('Voltage: {}'.format(voltage))
+            voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10)
+            if abs(int(voltage) - int(last_voltage) > 2):
+                logger.info('Voltage: {}'.format(float(voltage) / 10.0))
                 last_voltage = voltage
             if voltage < supervision['min_volts']:
                 logger.info('Detecting under-volt, starting charger = {}'.format(voltage))
@@ -181,12 +214,15 @@ async def main_loop(ledplay_startup):
                 for i in range(0, int(1.0 / 3.0 * float(supervision['charge_time']))):
                     await asyncio.sleep(3 * 60)
                     voltage = int(YVoltage.FindVoltage(voltage_sensor_name).get_currentValue() * 10) / 10.0
-                    logger.info('Reset watchdog during charging')
+                    logger.info('Reset watchdog during charging, current voltage: {}'.format(float(voltage) / 10.0))
                     watchdog.resetWatchdog()
             elif charger_pin.value == 0:
                 handle_charger_off()
         """ Check on/off timing"""
-        off = lights_out(supervision['lights_on'], supervision['lights_off'])
+        if disable_sun:
+            off = False
+        else:
+            off = lights_out(supervision['lights_on'], supervision['lights_off'])
         if last_external is not None:
             if (datetime.datetime.now() - last_external).seconds > 60:
                 last_external = None
@@ -197,13 +233,16 @@ async def main_loop(ledplay_startup):
                 await asyncio.sleep(5)
                 handle_background_mode(None, 0)
                 handle_power_off()
+                handle_sound_off()
                 current_state = State.STOPPED
             elif power_pin.value:
                 handle_power_off()
+                handle_sound_off()
         else:
             level = int(tide_level())
             if current_state == State.STOPPED:
                 handle_power_on()
+                handle_sound_on()
                 await asyncio.sleep(5)
                 logger.info('Starting up to level {}'.format(level))
                 handle_background_mode(None, 1)
@@ -217,13 +256,16 @@ async def main_loop(ledplay_startup):
         await asyncio.sleep(1)
 
 
-async def init_main(args, dispatcher):
+async def init_main(args, dispatcher, sensor_dispatcher):
     """ Initialization routine """
     loop = asyncio.get_event_loop()
     server = AsyncIOOSCUDPServer((args.ip, args.port), dispatcher, loop)
-    transport, protocol = await server.create_serve_endpoint()
+    transport, _ = await server.create_serve_endpoint()
 
-    await main_loop(args.ledplay_startup)
+    sensor_server = AsyncIOOSCUDPServer((args.controller_ip, args.controller_port), sensor_dispatcher, loop)
+    server_transport, _ = await sensor_server.create_serve_endpoint()
+
+    await main_loop(args.ledplay_startup, args.disable_sun, args.disable_sound)
 
     transport.close()
 
@@ -240,14 +282,28 @@ if __name__ == "__main__":
     parser.add_argument('--ledplay_ip', default='192.168.4.1', help='The LED Play ip address')
     parser.add_argument('--ledplay_port', type=int, default=1234, help='The port that the LED Play application is listening on')
     parser.add_argument('--ledplay_startup', required=False, type=int, default=60, help='Time to wait before LEDPlay starts up')
+    parser.add_argument('--config', required=False, type=str, default='tidessensorosc/supervision.json')
+    parser.add_argument('--disable_sun', dest='disable_sun', action='store_true')
+    parser.add_argument('--disable_sound', dest='disable_sound', action='store_true')
+    parser.set_defaults(disable_sun=False, disable_sound=False)
     args = parser.parse_args()
 
-    with open('tidessensorosc/supervision.json', 'r') as file:
+    subprocess = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+    output, error = subprocess.communicate()
+    print(output)
+#    target_process = "python"
+#    for line in output.splitlines():
+#        if target_process in str(line):
+#            pid = int(line.split(None, 1)[0])
+#            os.kill(pid, 9)
+
+    with open(args.config, 'r') as file:
         supervision = json.load(file)
         battery_state_pin = DigitalInputDevice(supervision['battery_state_pin'], pull_up=True)
         charger_pin = DigitalOutputDevice(supervision['charger_pin'])
         charger_state_pin = DigitalInputDevice(supervision['charger_state_pin'], pull_up=True)
         power_pin = DigitalOutputDevice(supervision['power_pin'])
+        sound_pin = DigitalOutputDevice(supervision['sound_pin'])
 
     errmsg = YRefParam()
     if YAPI.RegisterHub('usb', errmsg) != YAPI.SUCCESS:
@@ -274,10 +330,15 @@ if __name__ == "__main__":
     dispatcher.map('/poweroff', handle_power_off)
     dispatcher.map('/chargeron', handle_charger_on)
     dispatcher.map('/chargeroff', handle_charger_off)
+    dispatcher.map('/soundon', handle_sound_on)
+    dispatcher.map('/soundoff', handle_sound_off)
+
+    sensor_dispatcher = Dispatcher()
+    sensor_dispatcher.map('/LEDPlay/player/foregroundRunIndex', handle_foreground_run_index)
 
     logger.info('Serving on {}:{}'.format(args.ip, args.port))
     logger.info('Current tide level is {}'.format(tide_level()))
     logger.info('Current sunset is {} UTC'.format(current_sunset()))
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(init_main(args, dispatcher))
+    loop.run_until_complete(init_main(args, dispatcher, sensor_dispatcher))
