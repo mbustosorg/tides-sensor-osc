@@ -18,6 +18,7 @@ import datetime
 import gc
 import json
 import logging
+import random
 import subprocess
 from logging.handlers import RotatingFileHandler
 
@@ -60,7 +61,8 @@ BACKGROUND_RUN_INDEX = '/LEDPlay/player/backgroundRunIndex'
 BACKGROUND_MODE = '/LEDPlay/player/backgroundMode'
 FOREGROUND_RUN_INDEX = '/LEDPlay/player/foregroundRunIndex'
 
-last_external = None
+last_external = datetime.datetime.now()
+last_idle = None
 
 
 def handle_background_run_index(unused_addr, index, external=True):
@@ -86,28 +88,48 @@ def handle_background_mode(unused_addr, index):
     led_play.send(msg.build())
 
 
-def handle_foreground_run_index(unused_addr, index, exernal=True):
-    """ Process the FOREGROUND_RUN_INDEX message """
+def execute_foreground_run_index(index):
+    """ Execute a foreground run"""
     logger.info('{} {}'.format(FOREGROUND_RUN_INDEX, index))
     msg = osc_message_builder.OscMessageBuilder(address=FOREGROUND_RUN_INDEX)
-    if index == 1:
-        msg.add_arg(4) #
-    elif index == 2:
-        msg.add_arg(3) #
-    elif index == 3:
-        msg.add_arg(2) #
-    elif index == 4:
-        msg.add_arg(5)
-    elif index == 5:
-        msg.add_arg(1)
-    elif index == 6:
-        msg.add_arg(7) #
-    elif index == 7:
-        msg.add_arg(6) #
-    else:
-        msg.add_arg(index)
+    msg.add_arg(index)
     led_play.send(msg.build())
-    #subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/piano2.wav', '-Dplug:' + str(index)])
+
+
+def handle_foreground_run_index(unused_addr, index, exernal=True):
+    """ Process the FOREGROUND_RUN_INDEX message """
+    #if index == 1:
+    #    msg.add_arg(4) #
+    #elif index == 2:
+    #    msg.add_arg(3) #
+    #elif index == 3:
+    #    msg.add_arg(2) #
+    #elif index == 4:
+    #    msg.add_arg(5)
+    #elif index == 5:
+    #    msg.add_arg(1)
+    #elif index == 6:
+    #    msg.add_arg(7) #
+    #elif index == 7:
+    #    msg.add_arg(6) #
+    #else:
+    #    msg.add_arg(index)
+    global last_external, last_idle
+    last_external = datetime.datetime.now()
+    last_idle = None
+    handle_background_run_index(None, 20)
+    execute_foreground_run_index(8)
+    execute_foreground_run_index(9)
+    execute_foreground_run_index(10)
+    execute_foreground_run_index(1)
+    execute_foreground_run_index(2)
+    execute_foreground_run_index(3)
+    execute_foreground_run_index(4)
+    execute_foreground_run_index(5)
+    execute_foreground_run_index(6)
+    execute_foreground_run_index(7)
+    #handle_sound_on()
+    #subprocess.Popen(['aplay', '/home/pi/tides-sensor-osc/tidessensorosc/audio_data/1.wav', '-Dplug:outstereo0'])
 
 
 def handle_power_on(unused_addr=None, index=None):
@@ -162,8 +184,9 @@ def maintain_background_sound(current_pids, track):
 
 async def main_loop(ledplay_startup, disable_sun, disable_sound):
     """ Main execution loop """
-    global last_external
+    global last_external, last_idle
 
+    idle_display_count = 0
     last_voltage = 0.0
     current_tide_level = 0
     current_state = State.STOPPED
@@ -178,9 +201,14 @@ async def main_loop(ledplay_startup, disable_sun, disable_sound):
     last_charger_state = charger_state_pin.value
     logger.info('Charger state {}'.format(last_charger_state))
 
-    """ Wait one minute for LED play to start up """
+    """ Wait for LED play to start up """
+    logger.info('LEDPlay Startup delay {}'.format(ledplay_startup))
     await asyncio.sleep(ledplay_startup)
 
+    handle_power_off()
+    handle_sound_off()
+    current_state = State.STOPPED
+    
     while True:
         """ Health checks """
         if battery_state_pin.value != last_battery_state:
@@ -214,10 +242,7 @@ async def main_loop(ledplay_startup, disable_sun, disable_sound):
             off = False
         else:
             off = lights_out(supervision['lights_on'], supervision['lights_off'])
-        if last_external is not None:
-            if (datetime.datetime.now() - last_external).seconds > 60:
-                last_external = None
-        elif off:
+        if off:
             if current_state != State.STOPPED:
                 logger.info('Shutting down to level 11')
                 handle_background_run_index(None, 11)  # Fade to black
@@ -229,6 +254,23 @@ async def main_loop(ledplay_startup, disable_sun, disable_sound):
             elif power_pin.value:
                 handle_power_off()
                 handle_sound_off()
+        elif last_idle is not None:
+            if (datetime.datetime.now() - last_idle).seconds > 60: #20:#120:
+                logger.info('Shutting off background shuffle')
+                last_external = None
+                last_idle = None
+                current_tide_level = -1
+        elif last_external is not None:
+            if (datetime.datetime.now() - last_external).seconds > 120: #50:#300:
+                if idle_display_count > 2:
+                    idle_display_count = 0
+                    last_external = None
+                    last_idle = datetime.datetime.now()
+                else:
+                    new_background = random.randint(12, 29)
+                    logger.info('Idle, starting a background shuffle {}'.format(new_background))
+                    handle_background_run_index(None, new_background)
+                    idle_display_count += 1
         else:
             level = int(tide_level())
             if current_state == State.STOPPED:
@@ -272,7 +314,7 @@ if __name__ == "__main__":
     parser.add_argument('--controller_port', type=int, default=9998, help='The port that the controller is listening on')
     parser.add_argument('--ledplay_ip', default='192.168.4.1', help='The LED Play ip address')
     parser.add_argument('--ledplay_port', type=int, default=1234, help='The port that the LED Play application is listening on')
-    parser.add_argument('--ledplay_startup', required=False, type=int, default=60, help='Time to wait before LEDPlay starts up')
+    parser.add_argument('--ledplay_startup', required=False, type=int, default=30, help='Time to wait before LEDPlay starts up')
     parser.add_argument('--config', required=False, type=str, default='tidessensorosc/supervision.json')
     parser.add_argument('--disable_sun', dest='disable_sun', action='store_true')
     parser.add_argument('--disable_sound', dest='disable_sound', action='store_true')
